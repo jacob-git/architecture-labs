@@ -1,0 +1,10 @@
+node_modules/
+.env
+.env.*
+!.env.example
+*.log
+.DS_Store
+
+# Real-model output is reviewed before publication.
+labs/*/results/*.json
+!labs/*/results/README.md
