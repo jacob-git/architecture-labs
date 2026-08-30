@@ -93,6 +93,64 @@ def build_report() -> dict[str, object]:
     }
 
 
+def render_summary_markdown(report: dict[str, object]) -> str:
+    summary = report["summary"]
+    rows = []
+    for result in report["results"]:
+        raw = "ESCALATE" if result["rawThreshold"]["escalated"] else "hold"
+        distinct = "ESCALATE" if result["distinctReporter"]["escalated"] else "hold"
+        shield = result["shield"]
+        rows.append(
+            "| "
+            f"`{result['scenarioId']}` | "
+            f"{result['counts']['events']:,} | "
+            f"{result['counts']['apps']} | "
+            f"{result['counts']['gateways']} | "
+            f"{result['counts']['paths']} | "
+            f"{raw} | {distinct} | "
+            f"{shield['confidence']:.3f} ({shield['tier']}) | "
+            f"{'PASS' if result['passed'] else 'FAIL'} |"
+        )
+
+    claims = "\n".join(
+        f"- {'PASS' if passed else 'FAIL'} `{name}`"
+        for name, passed in report["claimChecks"].items()
+    )
+    limitations = "\n".join(f"- {item}" for item in report["limitations"])
+
+    return (
+        "# SHIELD Lab #001 — Phase A Run Summary\n\n"
+        f"**Overall:** {'PASS' if summary['allPassed'] else 'FAIL'}  \n"
+        f"**Run timestamp (UTC):** `{report['startedAt']}`  \n"
+        f"**Repository commit:** `{report['repositoryCommit']}`  \n"
+        f"**Repository dirty:** `{report['repositoryDirty']}`  \n"
+        f"**Python:** `{report['pythonVersion']}`  \n"
+        f"**Platform:** `{report['platform']}`  \n"
+        f"**Runner:** `{report['runnerVersion']}`  \n"
+        f"**Scenario version:** `{report['scenarioVersion']}`  \n"
+        f"**Scoring version:** `{report['scoringVersion']}`  \n"
+        f"**Scenario digest:** `{report['scenarioDigest']}`  \n"
+        f"**Scoring digest:** `{report['scoringDigest']}`\n\n"
+        "## Scenario results\n\n"
+        "| Scenario | Events | Apps | Gateways | Paths | Raw | Distinct | SHIELD | Result |\n"
+        "|---|---:|---:|---:|---:|---|---|---|---|\n"
+        + "\n".join(rows)
+        + "\n\n"
+        "## Claim checks\n\n"
+        f"{claims}\n\n"
+        "## Totals\n\n"
+        f"- Scenario checks: **{summary['scenarioPasses']}/{summary['scenarios']}**\n"
+        f"- Claim checks: **{summary['claimPasses']}/{len(report['claimChecks'])}**\n"
+        f"- Overall: **{'PASS' if summary['allPassed'] else 'FAIL'}**\n\n"
+        "## Interpretation boundary\n\n"
+        "This run shows that the committed candidate scoring function behaves as specified "
+        "on the committed synthetic scenarios. It does not establish production incident "
+        "detection accuracy or validate SHIELD as a universal architecture.\n\n"
+        "## Limitations\n\n"
+        f"{limitations}\n"
+    )
+
+
 def print_summary(report: dict[str, object]) -> None:
     print("SHIELD Lab #001 — Phase A")
     print("=" * 44)
@@ -110,7 +168,7 @@ def print_summary(report: dict[str, object]) -> None:
     print("-" * 44)
     summary = report["summary"]
     print(f"Scenario checks: {summary['scenarioPasses']}/{summary['scenarios']}")
-    print(f"Claim checks:    {summary['claimPasses']}/3")
+    print(f"Claim checks:    {summary['claimPasses']}/{len(report['claimChecks'])}")
     print(f"Overall:         {'PASS' if summary['allPassed'] else 'FAIL'}")
     print(f"Repository:      {report['repositoryCommit']} dirty={report['repositoryDirty']}")
 
@@ -122,16 +180,27 @@ def main() -> None:
         default="labs/shield_001/results/phase-a-latest.json",
         help="JSON result path (default: labs/shield_001/results/phase-a-latest.json)",
     )
+    parser.add_argument(
+        "--summary-output",
+        default=None,
+        help="Markdown summary path (default: same path as --output with .summary.md suffix)",
+    )
     parser.add_argument("--stdout-json", action="store_true", help="Also print the complete JSON report.")
     args = parser.parse_args()
 
     report = build_report()
+
     output = Path(args.output)
+    summary_output = Path(args.summary_output) if args.summary_output else output.with_suffix(".summary.md")
     output.parent.mkdir(parents=True, exist_ok=True)
+    summary_output.parent.mkdir(parents=True, exist_ok=True)
+
     output.write_text(json.dumps(report, indent=2) + "\n", encoding="utf-8")
+    summary_output.write_text(render_summary_markdown(report), encoding="utf-8")
 
     print_summary(report)
-    print(f"Result written:  {output}")
+    print(f"JSON result:      {output}")
+    print(f"Summary:          {summary_output}")
     if args.stdout_json:
         json.dump(report, sys.stdout, indent=2)
         print()
