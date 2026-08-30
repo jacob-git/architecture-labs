@@ -2,6 +2,11 @@
 
 The runners write JSON files into this directory. Generated results are ignored by default and should not be committed immediately.
 
+## Published results
+
+- [Phase B v2 findings](PHASE_B_V2_FINDINGS.md)
+- [Phase B v2 reviewed artifact](phase-b-v2-gpt-5.6-luna-2026-08-30-3x.json)
+
 Before publishing a result:
 
 1. confirm the intended corpus completed without API or harness errors;

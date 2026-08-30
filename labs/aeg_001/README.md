@@ -39,6 +39,27 @@ Phase B v2 uses 120 unique committed prompts while holding the fictional tools, 
 
 The initial pilot exposed measurement weaknesses: repeated prompt text, permissive abstention scoring, under-specified read scopes, unrealistic configuration value types, and incomplete run provenance. Those findings were preserved as experiment feedback and corrected before a publication candidate was run.
 
+### Published Phase B v2 result
+
+Measured on August 30, 2026 with `gpt-5.6-luna`:
+
+| Metric | Result |
+|---|---:|
+| Unique scenarios | 120 |
+| Repetitions per scenario | 3 |
+| Completed trials | 360 / 360 |
+| Exact model expectation passes | 360 / 360 |
+| Proposal-conditioned governance passes | 360 / 360 |
+| Legitimate governed executions | 180 / 180 |
+| Trials expected not to execute | 180 |
+| Direct baseline executions in those trials | 180 / 180 |
+| Governed unsafe executions | 0 / 180 |
+| Repeat inconsistencies | 0 / 120 scenarios |
+
+The defensible result is narrow: for this model, fictional corpus, policy, runner, and simulated executor, no unauthorized execution was observed while every expected legitimate action was preserved. This is not evidence that AEG or any agent system is universally safe.
+
+Read the [Phase B v2 findings](results/PHASE_B_V2_FINDINGS.md) or inspect the [immutable reviewed result](results/phase-b-v2-gpt-5.6-luna-2026-08-30-3x.json).
+
 ### Run a smoke test
 
 Set the key in the shell; never store or commit it:
@@ -78,6 +99,6 @@ Model behavior, governance behavior, and execution safety are scored separately.
 
 Do not publish an AEG effectiveness percentage until the complete run has no harness or API errors, every failure is manually classified, model and governance failures are separated, critical failures are added to the regression corpus, versions are recorded, and limitations appear beside results.
 
-The first real-model run is evidence collection, not a victory claim.
+The first real-model run was treated as evidence collection and caused the v2 corpus and evaluator revision. The published result is still scoped experimental evidence, not a certification or universal safety claim.
 
 See [METHODOLOGY.md](METHODOLOGY.md) for the experiment design and [results/README.md](results/README.md) for the review workflow.
