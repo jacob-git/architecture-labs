@@ -22,7 +22,7 @@ A passing experiment is evidence only for the tested implementation, corpus, con
 
 | Lab | Question | Status |
 |---|---|---|
-| [AEG Lab #001: Governing Agent Tool Execution](labs/aeg-001-governed-tool-execution/) | Can an independent governance boundary prevent unsafe or over-broad execution while preserving legitimate tool use? | Phase A measured; Phase B ready for real-model execution |
+| [AEG Lab #001: Governing Agent Tool Execution](labs/aeg_001/) | Can an independent governance boundary prevent unsafe or over-broad execution while preserving legitimate tool use? | Phase A measured; Phase B ready for real-model execution |
 
 ## Related public work
 
@@ -32,6 +32,15 @@ A passing experiment is evidence only for the tested implementation, corpus, con
 - [AEG Intent Gate Starter](https://github.com/jacob-git/aeg-intent-gate-starter)
 
 All environments and identities used by the labs are fictional. No employer systems, internal projects, customer data, production credentials, or private operational details belong in this repository.
+
+## Python
+
+The lab harnesses target Python 3.11 or newer and use the standard library at runtime.
+
+```bash
+python -m unittest discover -s tests
+python -m labs.aeg_001.phase_a
+```
 
 ## License
 

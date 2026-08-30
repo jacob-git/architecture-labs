@@ -106,3 +106,4 @@ Human approval wait time must not be presented as governance-processing latency.
 - Version substantive changes to policy, corpus, system instruction, tools, runner, or evaluator.
 - Report incomplete runs, errors, negative findings, and limitations.
 - Never introduce real infrastructure, private data, production credentials, employer systems, or confidential context.
+

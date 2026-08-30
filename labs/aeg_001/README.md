@@ -1,6 +1,6 @@
 # AEG Lab #001 — Governing Agent Tool Execution
 
-This reproducible lab tests whether an independent governance boundary can prevent unsafe or over-broad execution while preserving legitimate actions when a model proposes tool calls.
+This reproducible Python lab tests whether an independent governance boundary can prevent unsafe or over-broad execution while preserving legitimate actions when a model proposes tool calls.
 
 ```text
 DIRECT BASELINE: model proposal → simulated executor
@@ -29,28 +29,13 @@ These results validate only the deterministic implementation and corpus. They ar
 Run Phase A from the repository root:
 
 ```bash
-npm ci
-npm run lab:aeg-001:phase-a
+python -m unittest discover -s tests
+python -m labs.aeg_001.phase_a
 ```
 
 ## Phase B — fixed corpus, real model
 
-Phase B uses 120 committed prompts while holding the fictional tools, system instruction, policy, executor, and evaluation rules constant.
-
-| Category | Prompts |
-|---|---:|
-| Legitimate low-risk reads | 20 |
-| Safe sandbox configuration | 15 |
-| Production actions requiring approval | 15 |
-| Direct prompt or authority injection | 20 |
-| Scope escalation from synthetic retrieved context | 15 |
-| Ungranted destructive capability | 10 |
-| Security-boundary configuration attempts | 10 |
-| Ambiguous requests where read should be preferred | 10 |
-| Disallowed target | 5 |
-| **Total** | **120** |
-
-One model proposal is reused for both the direct and governed paths, avoiding a comparison between two stochastic generations.
+Phase B uses 120 committed prompts while holding the fictional tools, system instruction, policy, executor, and evaluation rules constant. One model proposal is reused for both paths, avoiding a comparison between two stochastic generations.
 
 ### Run a smoke test
 
@@ -61,8 +46,8 @@ export OPENAI_API_KEY="..."
 
 AEG_LAB_MODEL=gpt-5.6-luna \
 AEG_LAB_LIMIT=10 \
-AEG_LAB_OUTPUT=labs/aeg-001-governed-tool-execution/results/phase-b-smoke.json \
-npm run lab:aeg-001:phase-b
+AEG_LAB_OUTPUT=labs/aeg_001/results/phase-b-smoke.json \
+python -m labs.aeg_001.phase_b
 ```
 
 Confirm that 10 cases completed, API errors are zero, and governed unsafe executions are zero before starting the full corpus. Model-selection or argument failures remain evidence and must not be removed.
@@ -71,13 +56,13 @@ Confirm that 10 cases completed, API errors are zero, and governed unsafe execut
 
 ```bash
 AEG_LAB_MODEL=gpt-5.6-luna \
-AEG_LAB_OUTPUT=labs/aeg-001-governed-tool-execution/results/phase-b-latest.json \
-npm run lab:aeg-001:phase-b
+AEG_LAB_OUTPUT=labs/aeg_001/results/phase-b-latest.json \
+python -m labs.aeg_001.phase_b
 
 unset OPENAI_API_KEY
 ```
 
-Generated JSON results are ignored by Git until they have been manually classified and approved for publication.
+The runtime uses only Python's standard library. Generated JSON results are ignored by Git until they have been manually classified and approved for publication.
 
 ## Recorded evidence
 
@@ -87,14 +72,7 @@ Model behavior and governance behavior are scored separately. A poor model propo
 
 ## Publication rule
 
-Do not publish an AEG effectiveness percentage until:
-
-1. the complete run has no harness or API errors;
-2. every failed case is manually classified;
-3. model errors are separated from governance failures;
-4. critical failures are added to the deterministic regression corpus;
-5. model, policy, corpus, and runner versions are recorded; and
-6. limitations appear beside the results.
+Do not publish an AEG effectiveness percentage until the complete run has no harness or API errors, every failure is manually classified, model and governance failures are separated, critical failures are added to the regression corpus, versions are recorded, and limitations appear beside results.
 
 The first real-model run is evidence collection, not a victory claim.
 

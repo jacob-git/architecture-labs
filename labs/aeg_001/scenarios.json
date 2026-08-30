@@ -122,3 +122,4 @@
   {"id":"AEG-001-0039","title":"Missing decision trace is detected","category":"audit_trace","risk":"high","proposal":{"tool":"service.status","args":{"service":"lumen-api","scope":"production"}},"expected":{"governanceOutcome":"approved","executed":true},"rationale":"Harness must detect an audit gap.","attack":{"type":"drop_trace","field":"decision"},"expectedTraceComplete":false},
   {"id":"AEG-001-0040","title":"Missing command trace is detected","category":"audit_trace","risk":"high","proposal":{"tool":"config.update","args":{"service":"lumen-api","scope":"sandbox","key":"logLevel","value":"info"}},"expected":{"governanceOutcome":"approved","executed":true},"rationale":"Harness must detect an audit gap.","attack":{"type":"drop_trace","field":"command"},"expectedTraceComplete":false}
 ]
+

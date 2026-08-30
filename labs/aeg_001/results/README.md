@@ -15,3 +15,4 @@ Before publishing a result:
 9. commit an immutable, descriptively named result instead of silently replacing history.
 
 Raw response identifiers are experiment metadata, not proof of correctness. Never commit an API key, authorization header, local environment file, or chain-of-thought.
+
