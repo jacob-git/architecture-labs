@@ -8,7 +8,8 @@ __pycache__/
 *.log
 .DS_Store
 
-# Real-model output is reviewed before publication.
+# Generated lab output is reviewed before publication.
 labs/*/results/*.json
+labs/*/results/*.summary.md
 !labs/*/results/README.md
 !labs/aeg_001/results/phase-b-v2-gpt-5.6-luna-2026-08-30-3x.json
