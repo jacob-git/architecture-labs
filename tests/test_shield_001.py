@@ -8,6 +8,7 @@ from labs.shield_001.core import (
     scenario_digest,
     shield_detector,
 )
+from labs.shield_001.phase_a import build_report, render_summary_markdown
 
 
 class ShieldLab001Tests(unittest.TestCase):
@@ -49,6 +50,17 @@ class ShieldLab001Tests(unittest.TestCase):
         digest = scenario_digest()
         self.assertEqual(len(digest), 64)
         self.assertEqual(digest, scenario_digest())
+
+    def test_summary_contains_provenance_and_scenario_results(self):
+        report = build_report()
+        summary = render_summary_markdown(report)
+        self.assertIn("SHIELD Lab #001", summary)
+        self.assertIn(report["repositoryCommit"], summary)
+        self.assertIn(report["scenarioDigest"], summary)
+        self.assertIn("correlated_retry_storm", summary)
+        self.assertIn("independent_corroboration", summary)
+        self.assertIn("hidden_shared_gateway", summary)
+        self.assertIn("Overall: **PASS**", summary)
 
 
 if __name__ == "__main__":
