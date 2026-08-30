@@ -59,20 +59,24 @@ python3 -m unittest discover -s tests
 python3 -m labs.shield_001.phase_a
 ```
 
-The runner writes:
+The runner writes both the full machine-readable result and a compact human-readable summary:
 
 ```text
 labs/shield_001/results/phase-a-latest.json
+labs/shield_001/results/phase-a-latest.summary.md
 ```
 
-That generated JSON is ignored by Git until it is reviewed for publication.
+Both generated files are ignored by Git until they are reviewed for publication. The Markdown summary contains provenance, digests, scenario results, claim checks, totals, and the interpretation boundary so it can be shared without pasting the full JSON.
 
-For a different output path:
+For different output paths:
 
 ```bash
 python3 -m labs.shield_001.phase_a \
-  --output labs/shield_001/results/phase-a-rpi5.json
+  --output labs/shield_001/results/phase-a-rpi5.json \
+  --summary-output labs/shield_001/results/phase-a-rpi5.summary.md
 ```
+
+If `--summary-output` is omitted, the summary name is derived automatically from the JSON output path.
 
 ## What the result records
 
