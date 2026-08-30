@@ -14,5 +14,6 @@ Before publishing a result:
 8. publish limitations beside the measurements; and
 9. commit an immutable, descriptively named result instead of silently replacing history.
 
-Raw response identifiers are experiment metadata, not proof of correctness. Never commit an API key, authorization header, local environment file, or chain-of-thought.
+Verify that governance totals use only records with an actual proposal. Abstentions must be reviewed as model behavior and must not inflate governance passes.
 
+Only hashed response identifiers are retained. Never commit an API key, authorization header, local environment file, or chain-of-thought.

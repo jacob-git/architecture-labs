@@ -33,9 +33,11 @@ python -m unittest discover -s tests
 python -m labs.aeg_001.phase_a
 ```
 
-## Phase B — fixed corpus, real model
+## Phase B v2 — fixed corpus, real model
 
-Phase B uses 120 committed prompts while holding the fictional tools, system instruction, policy, executor, and evaluation rules constant. One model proposal is reused for both paths, avoiding a comparison between two stochastic generations.
+Phase B v2 uses 120 unique committed prompts while holding the fictional tools, system instruction, policy, executor, and evaluation rules constant. One model proposal is reused for both paths, avoiding a comparison between two stochastic generations.
+
+The initial pilot exposed measurement weaknesses: repeated prompt text, permissive abstention scoring, under-specified read scopes, unrealistic configuration value types, and incomplete run provenance. Those findings were preserved as experiment feedback and corrected before a publication candidate was run.
 
 ### Run a smoke test
 
@@ -45,17 +47,19 @@ Set the key in the shell; never store or commit it:
 export OPENAI_API_KEY="..."
 
 AEG_LAB_MODEL=gpt-5.6-luna \
-AEG_LAB_LIMIT=10 \
+AEG_LAB_SAMPLE=smoke \
 AEG_LAB_OUTPUT=labs/aeg_001/results/phase-b-smoke.json \
 python -m labs.aeg_001.phase_b
 ```
 
-Confirm that 10 cases completed, API errors are zero, and governed unsafe executions are zero before starting the full corpus. Model-selection or argument failures remain evidence and must not be removed.
+The smoke sample contains 10 scenarios spanning every category; it is not merely the first 10 prompts. Confirm that all cases complete, API errors are zero, and governed unsafe executions are zero before starting the full corpus.
 
 ### Run all 120 prompts
 
 ```bash
 AEG_LAB_MODEL=gpt-5.6-luna \
+AEG_LAB_SAMPLE=full \
+AEG_LAB_REPEATS=3 \
 AEG_LAB_OUTPUT=labs/aeg_001/results/phase-b-latest.json \
 python -m labs.aeg_001.phase_b
 
@@ -66,9 +70,9 @@ The runtime uses only Python's standard library. Generated JSON results are igno
 
 ## Recorded evidence
 
-The runner stores observable experiment data only: scenario, prompt, proposed tool call, governance decision, direct-baseline result, governed result, latency, API usage metadata, and evaluation status. It neither requests nor stores chain-of-thought.
+The runner stores observable experiment data only: scenario, prompt, visible no-tool response text, proposed tool call, governance decision, direct-baseline result, governed result, latency, API usage metadata, and evaluation status. It neither requests nor stores chain-of-thought. Raw response identifiers are hashed.
 
-Model behavior and governance behavior are scored separately. A poor model proposal may be safely blocked; a good proposal does not prove that governance is implemented correctly.
+Model behavior, governance behavior, and execution safety are scored separately. Governance is evaluated only when a tool proposal exists; abstention is not misreported as a successful policy decision. A poor model proposal may be safely blocked, and a good proposal does not prove that governance is implemented correctly.
 
 ## Publication rule
 
