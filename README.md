@@ -23,11 +23,13 @@ A passing experiment is evidence only for the tested implementation, corpus, con
 | Lab | Question | Status |
 |---|---|---|
 | [AEG Lab #001: Governing Agent Tool Execution](labs/aeg_001/) | Can an independent governance boundary prevent unsafe or over-broad execution while preserving legitimate tool use? | Phase A and Phase B v2 measured |
+| [SHIELD Lab #001: Independent Evidence Reinforcement](labs/shield_001/) | Can correlation-aware evidence weighting distinguish repeated observations from genuinely independent corroboration? | Phase A harness ready for independent execution |
 
 ## Related public work
 
 - [AEG Architecture Model](https://jacobpallattu.com/architecture/aeg)
 - [AEG Practical Model Kit](https://jacobpallattu.com/architecture/aeg/kit)
+- [SHIELD Architecture Model](https://jacobpallattu.com/architecture/shield)
 - [AEG Intent Gate](https://github.com/jacob-git/aeg-intent-gate)
 - [AEG Intent Gate Starter](https://github.com/jacob-git/aeg-intent-gate-starter)
 
@@ -40,6 +42,7 @@ The lab harnesses target Python 3.11 or newer and use the standard library at ru
 ```bash
 python -m unittest discover -s tests
 python -m labs.aeg_001.phase_a
+python -m labs.shield_001.phase_a
 ```
 
 ## License
