@@ -2,6 +2,15 @@
 
 Generated JSON and Markdown summaries are ignored by Git until reviewed.
 
+## Reviewed publications
+
+| Artifact | Status | Scope |
+|---|---|---|
+| [`v2-validation-2026-08-30-clean.summary.md`](v2-validation-2026-08-30-clean.summary.md) | PASS | Clean v2 regression validation at commit `5a492909692891bacb564a9451b073a8478b0bef` |
+| [`v2-validation-findings.md`](v2-validation-findings.md) | Findings | Documents the v1 Phase B failure, v2 repair, evidence boundary, and next research step |
+
+The reviewed v2 publication preserves the human-readable summary supplied from the clean run. The corresponding generated JSON artifact was not supplied for review and is therefore not published or reconstructed here.
+
 ## Review checklist
 
 Before committing a result artifact:

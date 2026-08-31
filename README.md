@@ -23,7 +23,7 @@ A passing experiment is evidence only for the tested implementation, corpus, con
 | Lab | Question | Status |
 |---|---|---|
 | [AEG Lab #001: Governing Agent Tool Execution](labs/aeg_001/) | Can an independent governance boundary prevent unsafe or over-broad execution while preserving legitimate tool use? | Phase A and Phase B v2 measured |
-| [SHIELD Lab #001: Independent Evidence Reinforcement](labs/shield_001/) | Can correlation-aware evidence weighting distinguish repeated observations from genuinely independent corroboration? | Phase A measured; Phase B exposed v1 concentration blindness; v2 validation implemented |
+| [SHIELD Lab #001: Independent Evidence Reinforcement](labs/shield_001/) | Can correlation-aware evidence weighting distinguish repeated observations from genuinely independent corroboration? | Phase A measured; Phase B exposed v1 concentration blindness; clean v2 regression validation published |
 
 ## Related public work
 
