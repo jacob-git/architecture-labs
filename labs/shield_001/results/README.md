@@ -16,4 +16,12 @@ Before committing a result artifact:
 8. publish limitations beside any reported result;
 9. use immutable filenames for reviewed results rather than publishing a `latest` artifact.
 
+## Version history policy
+
+`shield-evidence-score-v1` is frozen as the scoring version that passed Phase A and failed two Phase B robustness checks. Do not alter v1 to make the negative result disappear.
+
+`shield-evidence-score-v2` is a separate concentration-aware revision. Its validation must reproduce the v1 baseline, preserve all fixed Phase A outcomes, and pass the unchanged Phase B sweep before it is considered a successful regression repair.
+
+Even a clean v2 pass is not real-world validation because v2 was designed after observing the Phase B counterexample. A reviewed v2 artifact should state that limitation beside the result.
+
 Phase A is deterministic harness evidence only. Phase B is explicitly adversarial and may intentionally exit nonzero when the candidate score violates a predeclared check. A negative result should drive a new scoring version, not be rewritten away.
