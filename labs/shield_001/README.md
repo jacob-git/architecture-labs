@@ -65,19 +65,21 @@ See [`PHASE_E.md`](PHASE_E.md).
 
 Phase F does not change temporal v3 or the Phase E labels. It introduces a separate candidate policy for turning evidence into bounded action authority.
 
-The policy consumes five independent inputs:
-
-- temporal v3 confidence;
-- severity/impact;
-- reversibility;
-- blast radius;
-- explicit safety-gate result.
-
-The key rule is that **severity can increase urgency without manufacturing confidence**. In particular, the Phase E shared-cause incidents `I10` and `I11` remain medium-confidence but may receive narrowly reversible `mitigate` authority when severity is critical, blast radius is bounded, and safety passes. `I12` remains limited to `validate` because the modeled action is irreversible/high-blast-radius.
-
-Medium confidence can never authorize `isolate` or `recover`, and a failed safety gate always caps authority at `observe`.
+The policy consumes temporal v3 confidence, severity/impact, reversibility, blast radius, and an explicit safety-gate result. Severity can increase urgency without manufacturing confidence. Medium confidence can never authorize `isolate` or `recover`, and a failed safety gate always caps authority at `observe`.
 
 See [`PHASE_F.md`](PHASE_F.md).
+
+### Phase F2 — adversarial authority-input trust
+
+Phase F2 freezes the Phase F policy and attacks the trustworthiness of its policy inputs. Declared metadata is evaluated separately from trusted ground truth.
+
+The seven checks cover spoofed severity, false reversibility, underestimated blast radius, stale impact, contradictory safety gates, unverified rollback, and an explicit safety-failure baseline.
+
+The deterministic result is **1/7 PASS**. Phase F v1 fails closed only when `safetyPass=False` is explicitly supplied. In the other six scenarios, untrusted or stale metadata can cause authority to exceed the frozen maximum-safe-authority bound.
+
+This establishes a new boundary: authority safety requires provenance, freshness, and verification of policy inputs, not just good confidence scoring and rule logic.
+
+See [`PHASE_F2.md`](PHASE_F2.md).
 
 ## Run on any Python 3.11+ machine
 
@@ -97,6 +99,7 @@ python3 -m labs.shield_001.phase_d
 python3 -m labs.shield_001.temporal_v3_validation
 python3 -m labs.shield_001.phase_e
 python3 -m labs.shield_001.phase_f
+python3 -m labs.shield_001.phase_f2
 ```
 
 Generated outputs include:
@@ -112,6 +115,7 @@ labs/shield_001/results/phase-d-latest.json
 labs/shield_001/results/temporal-v3-validation-latest.json
 labs/shield_001/results/phase-e-latest.json
 labs/shield_001/results/phase-f-latest.json
+labs/shield_001/results/phase-f2-latest.json
 ```
 
 Each runner also writes a `.summary.md` beside its JSON result. Generated outputs are ignored by Git until reviewed.
@@ -120,6 +124,6 @@ Each runner also writes a `.summary.md` beside its JSON result. Generated output
 
 A passing deterministic phase is scoped evidence only. Preserve negative results, version material changes, and distinguish regression repair from independent holdout or real-world validation.
 
-Phase E is synthetic, balanced, and authored in the same repository. Phase F is also synthetic and evaluates authority decisions only; it does not execute remediation. Do not interpret a Phase F pass as production authorization for autonomous recovery.
+Phase E is synthetic, balanced, and authored in the same repository. Phase F and F2 evaluate authority decisions only; they do not execute remediation. Do not interpret any deterministic pass as production authorization for autonomous recovery.
 
 See [METHODOLOGY.md](METHODOLOGY.md) for the broader experiment design and [results/README.md](results/README.md) for publication rules.
