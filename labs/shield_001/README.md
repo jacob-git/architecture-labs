@@ -16,76 +16,48 @@ Can a correlation-aware evidence model assign higher confidence to a small, dive
 
 ## Phase A — fixed scenarios
 
-Phase A establishes the basic behavior of `shield-evidence-score-v1` with three committed scenarios:
-
-| Scenario | Events | Apps | Regions | Gateways | Paths | Expected SHIELD |
-|---|---:|---:|---:|---:|---:|---|
-| `correlated_retry_storm` | 10,000 | 1 | 1 | 1 | 1 | Low |
-| `independent_corroboration` | 50 | 10 | 3 | 4 | 4 | High |
-| `hidden_shared_gateway` | 5,000 | 50 | 1 | 1 | 1 | Medium, below independent corroboration |
-
-Phase A is a deterministic regression baseline. It does not establish real-world effectiveness.
+Phase A establishes the basic behavior of `shield-evidence-score-v1` with three committed scenarios: a 10,000-event correlated retry storm, 50-event independent corroboration, and a 5,000-event many-app/shared-gateway case. Phase A is a deterministic regression baseline, not real-world validation.
 
 ## Phase B — adversarial sensitivity and partial correlation
 
-Phase B evaluates 1,782 deterministic topology profiles and challenges four predeclared properties: topology monotonicity, repetition saturation, partial-correlation sensitivity, and adversarial ranking.
+Phase B evaluates the frozen 1,782-profile topology matrix plus gateway/path concentration stress cases. V1 passed topology monotonicity and repetition saturation but failed concentration sensitivity and adversarial ranking.
 
-The measured v1 result exposed a concrete weakness: raw topology cardinality could not distinguish balanced four-way evidence from evidence that was 99% concentrated on one gateway and path. V1 remains frozen as the scoring version that produced that negative result.
-
-## Evidence score v2 — distribution-aware revision
-
-`shield-evidence-score-v2` replaces raw source cardinality with an inverse-Simpson effective source count while preserving the frozen Phase A and Phase B criteria.
-
-```text
-25%, 25%, 25%, 25%              → effective count ≈ 4
-99%, 0.33%, 0.33%, 0.34%        → effective count ≈ 1
-```
-
-A clean validation reproduced the v1 baseline, preserved Phase A, and moved the unchanged Phase B suite from 2/4 checks under v1 to 4/4 under v2. The reviewed summary and findings are in [`results/`](results/).
-
-This is regression-repair evidence, not independent production validation.
+The negative result remains frozen. `shield-evidence-score-v2` replaced raw topology cardinality with inverse-Simpson effective source counts and subsequently passed the unchanged Phase B suite while preserving Phase A. Reviewed v2 evidence is in [`results/`](results/).
 
 ## Phase C — temporal evidence, recovery, and recurrence
 
-Phase C adds a candidate temporal layer, `shield-temporal-evidence-v1`, on top of the frozen v2 distribution-aware model. It does not rewrite v2.
+Phase C introduces `shield-temporal-evidence-v1` on top of the frozen v2 structural score. It uses a 30-minute experimental half-life, recovery supersession, recurrence, and post-saturation freshness.
 
-The temporal model uses a 30-minute experimental half-life and treats an evidence unit as:
+Its seven frozen checks cover fresh accumulation, passive decay, partial recovery, recurrence, future-data isolation, stale-volume resistance, and input-order invariance. Temporal v1 passes Phase C.
 
-```text
-(app, region, cluster, gateway, path)
-```
+## Phase C2 — adversarial temporal robustness
 
-For an active evidence unit with age `t`:
+Phase C2 attacks temporal v1 without changing Phase C. It adds seven adversarial checks for:
 
-```text
-freshness = 0.5 ** (t / half_life)
-```
+1. cross-fingerprint recovery isolation;
+2. mixed stale + fresh history;
+3. delayed recovery arrival;
+4. bursty single-unit recurrence;
+5. future clock skew visibility;
+6. same-timestamp failure/recovery contradiction;
+7. contradictory input-order invariance.
 
-Recovery supersedes prior failures for the same evidence unit. A later failure on that unit is treated as recurrence.
+Temporal v1 passes only 3/7 Phase C2 checks. The four counterexamples are preserved in `phase_c2.py` and documented in [`PHASE_C2.md`](PHASE_C2.md).
 
-The key design rule is that freshness is applied **after event-volume saturation**:
+## Temporal evidence v2 — adversarial repair
 
-```text
-effective_evidence =
-    source_support
-    × topology_independence
-    × saturated_observation_strength
-    × freshness
-```
+`shield-temporal-evidence-v2` is a separate revision. It does not overwrite temporal v1 or alter the frozen Phase C/C2 criteria.
 
-That prevents a very large historical incident from remaining authoritative merely because its original event count was large.
+The revision is intentionally narrow:
 
-Phase C predeclares seven checks:
+- recovery identity includes the failure fingerprint;
+- current observation strength is based on each evidence unit's latest failure episode rather than its entire surviving history;
+- future-dated events remain excluded from confidence but are surfaced as diagnostics;
+- same-timestamp failure/recovery ties still resolve to recovery for confidence, while the contradiction remains explicitly visible.
 
-1. fresh independent evidence accumulates from low to high confidence;
-2. passive confidence decays with no new evidence;
-3. partial recovery materially reduces confidence;
-4. full recovery clears prior evidence and fresh recurrence rebuilds confidence;
-5. future recurrence evidence does not affect an earlier evaluation time;
-6. a stale 5,000-event balanced incident cannot override decay;
-7. input ordering does not change the temporal result.
+The validation runner executes temporal v1 and temporal v2 against the same committed Phase C and Phase C2 harnesses. Temporal v2 is accepted by this regression only if the v1 history is reproduced, all seven Phase C checks stay passing, and all seven unchanged Phase C2 checks pass.
 
-The 30-minute half-life and recovery semantics are lab parameters, not production recommendations.
+See [`TEMPORAL_V2.md`](TEMPORAL_V2.md) for the design boundary and limitations.
 
 ## Run on any Python 3.11+ machine
 
@@ -99,27 +71,27 @@ python3 -m labs.shield_001.phase_a
 python3 -m labs.shield_001.phase_b
 python3 -m labs.shield_001.v2_validation
 python3 -m labs.shield_001.phase_c
+python3 -m labs.shield_001.phase_c2
+python3 -m labs.shield_001.temporal_v2_validation
 ```
 
-Generated outputs:
+Generated outputs include:
 
 ```text
 labs/shield_001/results/phase-a-latest.json
-labs/shield_001/results/phase-a-latest.summary.md
 labs/shield_001/results/phase-b-latest.json
-labs/shield_001/results/phase-b-latest.summary.md
 labs/shield_001/results/v2-validation-latest.json
-labs/shield_001/results/v2-validation-latest.summary.md
 labs/shield_001/results/phase-c-latest.json
-labs/shield_001/results/phase-c-latest.summary.md
+labs/shield_001/results/phase-c2-latest.json
+labs/shield_001/results/temporal-v2-validation-latest.json
 ```
 
-Generated JSON and summary files are ignored by Git until reviewed. Each summary includes provenance, digests, measurements, claim checks, and the interpretation boundary.
+Each runner also writes a `.summary.md` beside its JSON result. Generated outputs are ignored by Git until reviewed.
 
 ## Evidence rules
 
-Each result records the runner/scenario or sweep/scoring versions, repository commit and dirty state, configuration digests, Python/platform information, measurements, explicit pass/fail checks, and limitations.
+A passing deterministic phase is scoped evidence only. Preserve negative results, version material changes, and distinguish regression repair from independent holdout or real-world validation.
 
-Do not describe SHIELD as validated merely because a deterministic phase passes. Preserve negative results, version material scoring changes, and distinguish regression evidence from independent holdout or real-world evidence.
+Temporal v2 was designed after observing the Phase C2 failures. Even if it passes the frozen suites, that establishes repair of those known counterexamples rather than independent production validity.
 
-See [METHODOLOGY.md](METHODOLOGY.md) for experiment design and [results/README.md](results/README.md) for the publication workflow.
+See [METHODOLOGY.md](METHODOLOGY.md) for the broader experiment design and [results/README.md](results/README.md) for publication rules.
