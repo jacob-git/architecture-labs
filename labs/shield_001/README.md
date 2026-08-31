@@ -61,6 +61,24 @@ The three false negatives are real synthetic shared-cause incidents whose observ
 
 See [`PHASE_E.md`](PHASE_E.md).
 
+### Phase F — confidence, severity, and remediation authority
+
+Phase F does not change temporal v3 or the Phase E labels. It introduces a separate candidate policy for turning evidence into bounded action authority.
+
+The policy consumes five independent inputs:
+
+- temporal v3 confidence;
+- severity/impact;
+- reversibility;
+- blast radius;
+- explicit safety-gate result.
+
+The key rule is that **severity can increase urgency without manufacturing confidence**. In particular, the Phase E shared-cause incidents `I10` and `I11` remain medium-confidence but may receive narrowly reversible `mitigate` authority when severity is critical, blast radius is bounded, and safety passes. `I12` remains limited to `validate` because the modeled action is irreversible/high-blast-radius.
+
+Medium confidence can never authorize `isolate` or `recover`, and a failed safety gate always caps authority at `observe`.
+
+See [`PHASE_F.md`](PHASE_F.md).
+
 ## Run on any Python 3.11+ machine
 
 No API key, model, database, container, or third-party Python package is required.
@@ -78,6 +96,7 @@ python3 -m labs.shield_001.temporal_v2_validation
 python3 -m labs.shield_001.phase_d
 python3 -m labs.shield_001.temporal_v3_validation
 python3 -m labs.shield_001.phase_e
+python3 -m labs.shield_001.phase_f
 ```
 
 Generated outputs include:
@@ -92,6 +111,7 @@ labs/shield_001/results/temporal-v2-validation-latest.json
 labs/shield_001/results/phase-d-latest.json
 labs/shield_001/results/temporal-v3-validation-latest.json
 labs/shield_001/results/phase-e-latest.json
+labs/shield_001/results/phase-f-latest.json
 ```
 
 Each runner also writes a `.summary.md` beside its JSON result. Generated outputs are ignored by Git until reviewed.
@@ -100,6 +120,6 @@ Each runner also writes a `.summary.md` beside its JSON result. Generated output
 
 A passing deterministic phase is scoped evidence only. Preserve negative results, version material changes, and distinguish regression repair from independent holdout or real-world validation.
 
-Phase E is synthetic, balanced, and authored in the same repository. It is the first phase to measure labeled detector performance, but it is not an external or blinded validation. Do not optimize the high-confidence threshold against this corpus after seeing the labels.
+Phase E is synthetic, balanced, and authored in the same repository. Phase F is also synthetic and evaluates authority decisions only; it does not execute remediation. Do not interpret a Phase F pass as production authorization for autonomous recovery.
 
 See [METHODOLOGY.md](METHODOLOGY.md) for the broader experiment design and [results/README.md](results/README.md) for publication rules.
