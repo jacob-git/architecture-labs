@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "architecture-labs"
-version = "0.17.0"
+version = "0.18.0"
 description = "Public, reproducible experiments for testing architecture claims."
 readme = "README.md"
 requires-python = ">=3.11"
@@ -29,6 +29,7 @@ shield-lab-001-authority-v2-validation = "labs.shield_001.authority_v2_validatio
 aeg-shield-lab-001 = "labs.aeg_shield_001.runner:main"
 aeg-shield-lab-001-phase-b = "labs.aeg_shield_001.phase_b:main"
 aeg-shield-lab-001-phase-c = "labs.aeg_shield_001.phase_c:main"
+aeg-shield-lab-001-phase-d = "labs.aeg_shield_001.phase_d:main"
 
 [tool.setuptools.packages.find]
 include = ["labs*"]
