@@ -6,9 +6,9 @@ SHIELD proposes that repeated observations are not automatically independent evi
 
 This lab tests evidence weighting only. It does not test remediation authority or self-healing actions.
 
-## Candidate score under test
+## Candidate score v1
 
-The candidate `shield-evidence-score-v1` separates four ideas:
+The original `shield-evidence-score-v1` separates four ideas:
 
 - **observation strength** — additional repeated events saturate quickly;
 - **source support** — application reporters contribute bounded support;
@@ -88,34 +88,15 @@ gateways:  1, 2, 4
 paths:     1, 2, 4
 ```
 
-Profiles where the number of observations cannot represent every requested unique dimension are excluded. The current sweep evaluates 1,782 valid profiles.
-
-The matrix checks that increasing application or topology cardinality does not reduce confidence. It also records the largest adjacent score changes as a diagnostic for cliffs around caps and saturation regions.
+Profiles where the number of observations cannot represent every requested unique dimension are excluded. The frozen sweep evaluates 1,782 valid profiles.
 
 ### Partial-correlation sweep
 
-Unique topology counts can hide concentration. To test that weakness directly, Phase B holds the following cardinality fixed:
+Phase B holds cardinality fixed at 500 events, 20 apps, three regions, and four clusters/gateways/paths, then concentrates gateway and path observations at 25%, 50%, 75%, 90%, and 99%.
 
-```text
-events = 500
-apps = 20
-regions = 3
-clusters = 4
-gateways = 4
-paths = 4
-```
-
-It then concentrates gateway and path observations at:
-
-```text
-25%, 50%, 75%, 90%, 99%
-```
-
-Every level still contains all four gateways and all four paths. Only the distribution changes. This distinguishes cardinality from concentration.
+Every level still contains all four gateways and all four paths. Only the distribution changes.
 
 Predeclared requirement: confidence must strictly decrease at each concentration step and the balanced-to-99%-concentrated drop must be at least `0.10`.
-
-The 0.10 value is a Phase B stress criterion, not a universal SHIELD constant. Its purpose is to require material rather than numerically trivial sensitivity.
 
 ### Repetition saturation check
 
@@ -125,7 +106,7 @@ Predeclared requirement: confidence gain from 100 to 10,000 events must be at mo
 
 ### Adversarial ranking check
 
-Two topologies are compared:
+The frozen comparison is:
 
 **Balanced reference**
 
@@ -136,7 +117,7 @@ Two topologies are compared:
 4 clusters
 4 gateways
 4 paths
-25% maximum gateway/path concentration
+25% gateway/path concentration
 ```
 
 **High-volume concentrated challenger**
@@ -151,39 +132,69 @@ Two topologies are compared:
 99% gateway/path concentration
 ```
 
-The second topology has the same unique topology cardinality but almost all observations share one gateway and path. Phase B requires that it not outrank the balanced independent reference.
+The second topology has the same unique topology cardinality but almost all observations share one gateway and path. It must not outrank the balanced reference.
 
-### Phase B claim checks
+### Phase B v1 finding
 
-Phase B passes only if all four properties hold:
+V1 passed topology monotonicity and repetition saturation but failed partial-correlation sensitivity and adversarial ranking. The 25% through 99% concentration sweep remained flat at the same confidence because v1 used unique counts rather than distribution.
 
-1. **topology monotonicity** — increasing topology cardinality never reduces confidence;
-2. **post-saturation volume bounded** — raw repetition adds little confidence after saturation;
-3. **partial-correlation sensitivity** — concentration materially reduces confidence despite unchanged cardinality;
-4. **adversarial ranking** — a high-volume concentrated topology does not outrank the balanced reference.
+That negative result is preserved. The Phase B sweep, thresholds, and expected properties are frozen for the v2 regression test.
 
-A Phase B failure is evidence. The runner intentionally exits with code `2` if any predeclared property fails. Unit tests validate the harness independently and should still pass.
+## Evidence score v2 — concentration-aware revision
+
+V2 replaces raw cardinality with an inverse-Simpson effective source count while preserving v1's other constants and confidence mapping.
+
+For a dimension with observation proportions `p_i`:
+
+```text
+effective_count = 1 / Σ(p_i²)
+```
+
+Examples:
+
+```text
+25%, 25%, 25%, 25%               → effective_count = 4
+99%, 0.33%, 0.33%, 0.34%         → effective_count ≈ 1
+```
+
+V2 calculates effective counts for applications, regions, clusters, gateways, and paths. These effective counts replace raw unique counts in source support and topology diversity.
+
+The intended change is narrow: make confidence sensitive to concentration without weakening saturation or the fixed Phase A behavior.
+
+## V2 acceptance criteria
+
+The `v2_validation` runner executes both scoring versions against the same committed evidence. V2 is accepted by this lab only if all of these hold:
+
+1. **v1 baseline preserved** — Phase A still passes and frozen Phase B still reproduces the known v1 failure;
+2. **Phase A preserved** — all three fixed scenarios pass under v2 without changing their expected tiers;
+3. **Frozen Phase B passes** — all four Phase B properties pass under v2;
+4. **Sweep identity preserved** — both versions evaluate the same 1,782 profiles and the same sweep digest.
+
+No Phase B expectation or threshold is changed to make v2 pass.
+
+Passing this regression does not independently validate v2. V2 was designed after observing the Phase B counterexample, so this stage measures whether the identified weakness was repaired without breaking prior invariants.
 
 ## Reproducibility
 
-Both phases use Python 3.11+ standard library only and no randomness. Results record the Git commit, dirty state, runner/scenario or sweep/scoring versions, configuration digests, Python version, platform, complete measurements, and limitations.
+All current runners use Python 3.11+ standard library only and no randomness. Results record the Git commit, dirty state, runner/sweep/scoring versions, configuration digests, Python version, platform, complete measurements, and limitations.
 
 Generated JSON and Markdown summaries remain ignored until review. Formal publication requires a clean repository run or explicit classification of why provenance is unavailable.
 
 ## Threats to validity
 
 - Synthetic topology is a proxy for real causal structure.
-- Unique identifiers do not prove causal independence.
-- Traffic concentration is evidence of possible correlation, not proof that two observations share a root cause.
+- Effective source counts measure distribution concentration, not causal independence.
+- Traffic concentration is evidence of possible correlation, not proof that observations share a root cause.
 - The Phase B material-drop threshold is an experimental stress criterion and requires future calibration.
-- Neither phase has incident/non-incident ground truth, so precision, recall, false-positive rate, and false-negative rate are not yet measurable.
+- V2 was developed in response to the Phase B failure, so passing Phase B is not an independent holdout test.
+- Incident/non-incident ground truth is still absent, so precision, recall, false-positive rate, and false-negative rate are not yet measurable.
 - Temporal ordering, evidence decay, contradictory evidence, source reliability, and adversarial telemetry are not modeled yet.
 
 ## Next phases
 
-Evidence from Phase B should determine whether a new scoring version is needed before advancing.
+If v2 survives independent reproduction, the next tests should add evidence that was not used to design v2:
 
-- **Scoring v2 experiment** — incorporate concentration or richer causal/topology correlation without breaking Phase A invariants.
-- **Temporal evidence** — introduce arrival order, decay, recovery, and recurrence.
-- **Noisy ground truth** — inject incident and non-incident cases to measure calibration, precision, recall, and time-to-confidence.
-- **Trace replay** — replay openly available or consented operational traces with topology metadata and compare against conventional detection.
+- **holdout topology tests** — new distributions and dependency structures not represented in Phase B;
+- **temporal evidence** — arrival order, decay, recovery, and recurrence;
+- **noisy ground truth** — incident and non-incident cases to measure calibration, precision, recall, and time-to-confidence;
+- **trace replay** — openly available or consented operational traces with topology metadata.
