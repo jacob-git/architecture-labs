@@ -81,6 +81,23 @@ This establishes a new boundary: authority safety requires provenance, freshness
 
 See [`PHASE_F2.md`](PHASE_F2.md).
 
+### Remediation authority policy v2
+
+`shield-remediation-authority-policy-v2` is a separate repair. Phase F and F2 remain frozen.
+
+V2 introduces `shield-authority-evidence-envelope-v1`. Every authority-bearing input carries a source, trust status, verification status, and age. Safety carries the underlying required signals instead of a pre-collapsed boolean.
+
+The fail-closed rules are:
+
+- untrusted, stale, unverified, empty, or contradictory safety evidence caps authority at `observe`;
+- untrusted, stale, or unverified severity, reversibility, or blast-radius evidence caps authority at `validate`;
+- any `mitigate` or `isolate` authority that depends on reversibility requires independently verified rollback capability;
+- temporal v3 confidence remains unchanged.
+
+The authority-v2 validation runner must reproduce the policy-v1 history, including the Phase F2 `1/7` negative result, and then pass the unchanged Phase F and F2 suites under policy v2.
+
+See [`AUTHORITY_V2.md`](AUTHORITY_V2.md).
+
 ## Run on any Python 3.11+ machine
 
 No API key, model, database, container, or third-party Python package is required.
@@ -100,6 +117,7 @@ python3 -m labs.shield_001.temporal_v3_validation
 python3 -m labs.shield_001.phase_e
 python3 -m labs.shield_001.phase_f
 python3 -m labs.shield_001.phase_f2
+python3 -m labs.shield_001.authority_v2_validation
 ```
 
 Generated outputs include:
@@ -116,6 +134,7 @@ labs/shield_001/results/temporal-v3-validation-latest.json
 labs/shield_001/results/phase-e-latest.json
 labs/shield_001/results/phase-f-latest.json
 labs/shield_001/results/phase-f2-latest.json
+labs/shield_001/results/authority-v2-validation-latest.json
 ```
 
 Each runner also writes a `.summary.md` beside its JSON result. Generated outputs are ignored by Git until reviewed.
@@ -124,6 +143,6 @@ Each runner also writes a `.summary.md` beside its JSON result. Generated output
 
 A passing deterministic phase is scoped evidence only. Preserve negative results, version material changes, and distinguish regression repair from independent holdout or real-world validation.
 
-Phase E is synthetic, balanced, and authored in the same repository. Phase F and F2 evaluate authority decisions only; they do not execute remediation. Do not interpret any deterministic pass as production authorization for autonomous recovery.
+Phase E is synthetic, balanced, and authored in the same repository. Phase F and F2 evaluate authority decisions only; they do not execute remediation. Authority policy v2 still relies on synthetic trust assertions and does not establish real-world source authenticity or production authorization.
 
 See [METHODOLOGY.md](METHODOLOGY.md) for the broader experiment design and [results/README.md](results/README.md) for publication rules.
