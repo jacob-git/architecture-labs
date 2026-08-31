@@ -14,50 +14,43 @@ The environment, identities, dependency, topology, and incidents are entirely fi
 
 Can a correlation-aware evidence model assign higher confidence to a small, diverse set of independent observations than to a much larger set of repeated or causally shared observations?
 
-## Phase A — fixed scenarios
+## Evidence history
 
-Phase A establishes the basic behavior of `shield-evidence-score-v1` with three committed scenarios: a 10,000-event correlated retry storm, 50-event independent corroboration, and a 5,000-event many-app/shared-gateway case. Phase A is a deterministic regression baseline, not real-world validation.
+### Phase A and Phase B
 
-## Phase B — adversarial sensitivity and partial correlation
+Phase A established the basic behavior of `shield-evidence-score-v1`. The frozen 1,782-profile Phase B suite then exposed v1 concentration blindness and an adversarial ranking inversion.
 
-Phase B evaluates the frozen 1,782-profile topology matrix plus gateway/path concentration stress cases. V1 passed topology monotonicity and repetition saturation but failed concentration sensitivity and adversarial ranking.
+`shield-evidence-score-v2` introduced inverse-Simpson effective source counts and passed the unchanged Phase A and Phase B regression suites. Reviewed v2 evidence is in [`results/`](results/).
 
-The negative result remains frozen. `shield-evidence-score-v2` replaced raw topology cardinality with inverse-Simpson effective source counts and subsequently passed the unchanged Phase B suite while preserving Phase A. Reviewed v2 evidence is in [`results/`](results/).
+### Phase C and Phase C2
 
-## Phase C — temporal evidence, recovery, and recurrence
+Phase C introduced `shield-temporal-evidence-v1` with a 30-minute experimental half-life, recovery supersession, recurrence, and post-saturation freshness. Temporal v1 passed all seven Phase C checks.
 
-Phase C introduces `shield-temporal-evidence-v1` on top of the frozen v2 structural score. It uses a 30-minute experimental half-life, recovery supersession, recurrence, and post-saturation freshness.
+Phase C2 then attacked temporal v1 with seven new adversarial cases. Temporal v1 passed only 3/7. The four counterexamples remain frozen in `phase_c2.py` and are documented in [`PHASE_C2.md`](PHASE_C2.md).
 
-Its seven frozen checks cover fresh accumulation, passive decay, partial recovery, recurrence, future-data isolation, stale-volume resistance, and input-order invariance. Temporal v1 passes Phase C.
+### Temporal evidence v2
 
-## Phase C2 — adversarial temporal robustness
+`shield-temporal-evidence-v2` is a separate repair. It adds fingerprint-aware recovery identity, current-episode observation strength, future-timestamp diagnostics, and explicit same-timestamp conflict diagnostics.
 
-Phase C2 attacks temporal v1 without changing Phase C. It adds seven adversarial checks for:
+The temporal-v2 regression runner requires the temporal-v1 history to remain reproducible while v2 passes all unchanged Phase C and C2 checks. See [`TEMPORAL_V2.md`](TEMPORAL_V2.md).
 
-1. cross-fingerprint recovery isolation;
-2. mixed stale + fresh history;
-3. delayed recovery arrival;
-4. bursty single-unit recurrence;
-5. future clock skew visibility;
-6. same-timestamp failure/recovery contradiction;
-7. contradictory input-order invariance.
+## Phase D — post-v2 temporal holdout
 
-Temporal v1 passes only 3/7 Phase C2 checks. The four counterexamples are preserved in `phase_c2.py` and documented in [`PHASE_C2.md`](PHASE_C2.md).
+Phase D is a new suite created after temporal v2 was frozen. It is not used to tune temporal v2.
 
-## Temporal evidence v2 — adversarial repair
+Its seven holdout checks cover:
 
-`shield-temporal-evidence-v2` is a separate revision. It does not overwrite temporal v1 or alter the frozen Phase C/C2 criteria.
+1. non-reinforcement across unrelated failure fingerprints;
+2. stale evidence on different topology units amplifying fresh evidence;
+3. time-translation invariance;
+4. delayed pre-recovery telemetry replay;
+5. repeated-recovery idempotence;
+6. future-data isolation with visible diagnostics;
+7. fresh recurrence after a recovered historical incident.
 
-The revision is intentionally narrow:
+A Phase D failure is valid evidence. Temporal v2 must not be edited in place to make the holdout pass.
 
-- recovery identity includes the failure fingerprint;
-- current observation strength is based on each evidence unit's latest failure episode rather than its entire surviving history;
-- future-dated events remain excluded from confidence but are surfaced as diagnostics;
-- same-timestamp failure/recovery ties still resolve to recovery for confidence, while the contradiction remains explicitly visible.
-
-The validation runner executes temporal v1 and temporal v2 against the same committed Phase C and Phase C2 harnesses. Temporal v2 is accepted by this regression only if the v1 history is reproduced, all seven Phase C checks stay passing, and all seven unchanged Phase C2 checks pass.
-
-See [`TEMPORAL_V2.md`](TEMPORAL_V2.md) for the design boundary and limitations.
+The deterministic dry run passes five checks and exposes two new counterexamples: unrelated fingerprints can combine into high confidence, and stale evidence on different active units can escalate fresh evidence. See [`PHASE_D.md`](PHASE_D.md).
 
 ## Run on any Python 3.11+ machine
 
@@ -73,6 +66,7 @@ python3 -m labs.shield_001.v2_validation
 python3 -m labs.shield_001.phase_c
 python3 -m labs.shield_001.phase_c2
 python3 -m labs.shield_001.temporal_v2_validation
+python3 -m labs.shield_001.phase_d
 ```
 
 Generated outputs include:
@@ -84,6 +78,7 @@ labs/shield_001/results/v2-validation-latest.json
 labs/shield_001/results/phase-c-latest.json
 labs/shield_001/results/phase-c2-latest.json
 labs/shield_001/results/temporal-v2-validation-latest.json
+labs/shield_001/results/phase-d-latest.json
 ```
 
 Each runner also writes a `.summary.md` beside its JSON result. Generated outputs are ignored by Git until reviewed.
@@ -92,6 +87,6 @@ Each runner also writes a `.summary.md` beside its JSON result. Generated output
 
 A passing deterministic phase is scoped evidence only. Preserve negative results, version material changes, and distinguish regression repair from independent holdout or real-world validation.
 
-Temporal v2 was designed after observing the Phase C2 failures. Even if it passes the frozen suites, that establishes repair of those known counterexamples rather than independent production validity.
+Phase D was created after temporal v2 was frozen, so it is stronger than another repair regression. It is still synthetic and not blinded or externally sourced.
 
 See [METHODOLOGY.md](METHODOLOGY.md) for the broader experiment design and [results/README.md](results/README.md) for publication rules.
