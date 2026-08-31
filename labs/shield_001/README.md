@@ -36,30 +36,30 @@ Temporal v2 preserves all seven Phase C checks and passes all seven Phase C2 che
 
 ### Phase D — post-v2 holdout
 
-Phase D was created only after temporal v2 was frozen. Its seven holdout checks test mixed fingerprints, stale diversity, time translation, delayed replay, repeated recovery, future-data isolation, and recurrence reset.
-
-Temporal v2 passes 5/7 Phase D checks. The two new counterexamples are preserved in `phase_d.py` and documented in [`PHASE_D.md`](PHASE_D.md):
+Phase D was created only after temporal v2 was frozen. Temporal v2 passes 5/7 Phase D checks. The two new counterexamples are preserved in `phase_d.py` and documented in [`PHASE_D.md`](PHASE_D.md):
 
 1. unrelated fingerprints can mutually reinforce into a high-confidence result;
 2. stale evidence on different active topology units can escalate a fresh medium-confidence episode.
 
-Phase D must remain frozen.
+Phase D remains frozen.
 
 ### Temporal evidence v3
 
-`shield-temporal-evidence-v3` is a separate repair created after the Phase D failures.
+`shield-temporal-evidence-v3` repairs those Phase D failures by partitioning confidence by fingerprint and weighting freshness by current episode volume.
 
-Its changes are narrow:
+The temporal-v3 validation runner requires the measured v2 baseline and Phase D failure to remain reproducible while v3 passes unchanged Phase C, C2, and D. See [`TEMPORAL_V3.md`](TEMPORAL_V3.md).
 
-- score each failure fingerprint as an independent temporal evidence partition and expose all partition scores;
-- use the strongest partition as the overall confidence instead of pooling unrelated fingerprints;
-- weight the freshness factor by each active unit's current episode volume, so high-volume stale units receive proportionate temporal discount.
+### Phase E — noisy ground truth and calibration
 
-Temporal v2 remains unchanged. Phase C, C2, and D remain unchanged.
+Phase E is the first labeled incident/non-incident corpus. Temporal v3 remains frozen.
 
-The temporal-v3 validation runner accepts v3 only if the measured v2 baseline is reproduced, Phase C and C2 stay passing, Phase D reproduces the v2 5/7 holdout failure, and v3 passes all three frozen suites.
+The corpus contains 24 deterministic cases: 12 incident and 12 non-incident. At the existing SHIELD high-confidence boundary (`0.75`), Phase E measures precision, recall, false-positive rate, exploratory calibration diagnostics, and time to high confidence.
 
-See [`TEMPORAL_V3.md`](TEMPORAL_V3.md).
+The deterministic dry run gives `9 TP / 0 FP / 12 TN / 3 FN`: precision `1.00`, recall `0.75`, and FPR `0.00`. The frozen recall requirement is `>= 0.80`, so Phase E is intentionally preserved as **FAIL 6/7**.
+
+The three false negatives are real synthetic shared-cause incidents whose observations share a gateway, a path, or both. This demonstrates a key boundary: SHIELD confidence can remain conservative even when the underlying incident is real.
+
+See [`PHASE_E.md`](PHASE_E.md).
 
 ## Run on any Python 3.11+ machine
 
@@ -77,6 +77,7 @@ python3 -m labs.shield_001.phase_c2
 python3 -m labs.shield_001.temporal_v2_validation
 python3 -m labs.shield_001.phase_d
 python3 -m labs.shield_001.temporal_v3_validation
+python3 -m labs.shield_001.phase_e
 ```
 
 Generated outputs include:
@@ -90,6 +91,7 @@ labs/shield_001/results/phase-c2-latest.json
 labs/shield_001/results/temporal-v2-validation-latest.json
 labs/shield_001/results/phase-d-latest.json
 labs/shield_001/results/temporal-v3-validation-latest.json
+labs/shield_001/results/phase-e-latest.json
 ```
 
 Each runner also writes a `.summary.md` beside its JSON result. Generated outputs are ignored by Git until reviewed.
@@ -98,6 +100,6 @@ Each runner also writes a `.summary.md` beside its JSON result. Generated output
 
 A passing deterministic phase is scoped evidence only. Preserve negative results, version material changes, and distinguish regression repair from independent holdout or real-world validation.
 
-Phase D was an independent post-v2 synthetic holdout and therefore provides stronger evidence than the v2 repair regression. Temporal v3 was designed after observing Phase D, so passing Phase D under v3 would be regression-repair evidence, not a second independent holdout.
+Phase E is synthetic, balanced, and authored in the same repository. It is the first phase to measure labeled detector performance, but it is not an external or blinded validation. Do not optimize the high-confidence threshold against this corpus after seeing the labels.
 
 See [METHODOLOGY.md](METHODOLOGY.md) for the broader experiment design and [results/README.md](results/README.md) for publication rules.
