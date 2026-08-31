@@ -2,9 +2,9 @@
 
 ## Claim under test
 
-SHIELD proposes that repeated observations are not automatically independent evidence. Confidence should strengthen when matching evidence comes from genuinely diverse causal paths and should strengthen less when observations share a hidden dependency or topology bottleneck.
+SHIELD proposes that repeated observations are not automatically independent evidence. Confidence should strengthen when matching evidence comes from genuinely diverse causal paths, should strengthen less when observations share a dependency bottleneck, and should weaken as evidence becomes stale or is superseded by recovery.
 
-This lab tests evidence weighting only. It does not test remediation authority or self-healing actions.
+This lab tests evidence weighting and temporal confidence behavior only. It does not test remediation authority or self-healing actions.
 
 ## Candidate score v1
 
@@ -39,7 +39,7 @@ effective_evidence = source_support × independence_factor × observation_streng
 confidence = 1 - exp(-effective_evidence / 4)
 ```
 
-Confidence tiers are fixed before execution:
+Confidence tiers are fixed:
 
 ```text
 low     < 0.35
@@ -47,37 +47,21 @@ medium  0.35 to < 0.75
 high    >= 0.75
 ```
 
-This equation is an experimental instrument, not a normative SHIELD requirement. Material revisions receive a new scoring version rather than silently rewriting v1 after observing failures.
+The equation is an experimental instrument, not a normative SHIELD requirement. Material revisions receive a new scoring version rather than silently rewriting earlier results.
 
 ## Phase A — fixed-scenario validation
 
-### Correlated retry storm
+Phase A retains three deterministic scenarios:
 
-10,000 identical failures originate from one application, instance, host, cluster, region, gateway, path, and session. The raw threshold should escalate. SHIELD should remain low because repetition adds almost no new independence.
+1. **correlated retry storm** — 10,000 repeated observations from one causal path;
+2. **independent corroboration** — 50 observations distributed across applications and topology;
+3. **hidden shared gateway** — 5,000 observations from many apps sharing one region, gateway, and path.
 
-### Independent corroboration
-
-50 matching observations span 10 applications, 15 instances and hosts, six clusters, three regions, four gateways and paths, and 20 sessions. Raw volume remains below its threshold while SHIELD should reach high confidence.
-
-### Hidden shared gateway
-
-5,000 observations span 50 applications, 100 instances and hosts, and five clusters, but all observations share one region, gateway, and path. Both baseline thresholds escalate. SHIELD should discount the apparent source diversity and remain below the independent 50-observation scenario.
-
-### Phase A pass criteria
-
-1. independent corroboration confidence > correlated retry storm confidence;
-2. hidden shared gateway confidence < independent corroboration confidence;
-3. a scenario with more events can still have less SHIELD confidence when its evidence is more correlated.
-
-Phase A is retained as a permanent deterministic regression baseline.
+Phase A passes only when the fixed scenario expectations and cross-scenario ranking relationships hold. It is retained as a permanent regression baseline.
 
 ## Phase B — adversarial sensitivity and partial correlation
 
-Phase B challenges `shield-evidence-score-v1` without changing its scoring constants.
-
-### Matrix sweep
-
-The runner evaluates all valid combinations of:
+Phase B challenges v1 with the frozen 1,782-profile topology matrix:
 
 ```text
 events:    10, 25, 50, 100, 500, 2000
@@ -88,63 +72,26 @@ gateways:  1, 2, 4
 paths:     1, 2, 4
 ```
 
-Profiles where the number of observations cannot represent every requested unique dimension are excluded. The frozen sweep evaluates 1,782 valid profiles.
-
-### Partial-correlation sweep
-
-Phase B holds cardinality fixed at 500 events, 20 apps, three regions, and four clusters/gateways/paths, then concentrates gateway and path observations at 25%, 50%, 75%, 90%, and 99%.
-
-Every level still contains all four gateways and all four paths. Only the distribution changes.
-
-Predeclared requirement: confidence must strictly decrease at each concentration step and the balanced-to-99%-concentrated drop must be at least `0.10`.
-
-### Repetition saturation check
-
-A maximally correlated one-app/one-region/one-cluster/one-gateway/one-path topology is evaluated at 10, 25, 50, 100, 500, 2,000, and 10,000 events.
-
-Predeclared requirement: confidence gain from 100 to 10,000 events must be at most `0.01`.
-
-### Adversarial ranking check
-
-The frozen comparison is:
-
-**Balanced reference**
+It also holds topology cardinality fixed while increasing gateway/path concentration through:
 
 ```text
-50 events
-10 apps
-3 regions
-4 clusters
-4 gateways
-4 paths
-25% gateway/path concentration
+25%, 50%, 75%, 90%, 99%
 ```
 
-**High-volume concentrated challenger**
+The frozen Phase B properties are:
 
-```text
-5,000 events
-50 apps
-3 regions
-4 clusters
-4 gateways
-4 paths
-99% gateway/path concentration
-```
+1. topology cardinality must be monotonic;
+2. post-saturation repetition must add little confidence;
+3. partial correlation must materially reduce confidence;
+4. a high-volume 99%-concentrated topology must not outrank the balanced reference.
 
-The second topology has the same unique topology cardinality but almost all observations share one gateway and path. It must not outrank the balanced reference.
-
-### Phase B v1 finding
-
-V1 passed topology monotonicity and repetition saturation but failed partial-correlation sensitivity and adversarial ranking. The 25% through 99% concentration sweep remained flat at the same confidence because v1 used unique counts rather than distribution.
-
-That negative result is preserved. The Phase B sweep, thresholds, and expected properties are frozen for the v2 regression test.
+V1 passed the first two and failed the last two. That negative result remains part of the record.
 
 ## Evidence score v2 — concentration-aware revision
 
-V2 replaces raw cardinality with an inverse-Simpson effective source count while preserving v1's other constants and confidence mapping.
+V2 replaces raw cardinality with an inverse-Simpson effective source count.
 
-For a dimension with observation proportions `p_i`:
+For observation proportions `p_i` in one dimension:
 
 ```text
 effective_count = 1 / Σ(p_i²)
@@ -157,44 +104,168 @@ Examples:
 99%, 0.33%, 0.33%, 0.34%         → effective_count ≈ 1
 ```
 
-V2 calculates effective counts for applications, regions, clusters, gateways, and paths. These effective counts replace raw unique counts in source support and topology diversity.
+V2 calculates effective counts for applications, regions, clusters, gateways, and paths. The frozen Phase A and Phase B criteria are not weakened.
 
-The intended change is narrow: make confidence sensitive to concentration without weakening saturation or the fixed Phase A behavior.
+The clean reviewed v2 validation reproduced the v1 baseline, preserved all fixed Phase A outcomes, and passed all four unchanged Phase B checks. Because v2 was designed in response to the Phase B counterexample, that result is regression-repair evidence rather than an independent holdout validation.
 
-## V2 acceptance criteria
+## Phase C — temporal evidence, recovery, and recurrence
 
-The `v2_validation` runner executes both scoring versions against the same committed evidence. V2 is accepted by this lab only if all of these hold:
+Phase C introduces `shield-temporal-evidence-v1` as a separate temporal layer on top of the frozen v2 structural model.
 
-1. **v1 baseline preserved** — Phase A still passes and frozen Phase B still reproduces the known v1 failure;
-2. **Phase A preserved** — all three fixed scenarios pass under v2 without changing their expected tiers;
-3. **Frozen Phase B passes** — all four Phase B properties pass under v2;
-4. **Sweep identity preserved** — both versions evaluate the same 1,782 profiles and the same sweep digest.
+### Temporal evidence unit
 
-No Phase B expectation or threshold is changed to make v2 pass.
+The temporal layer groups evidence by:
 
-Passing this regression does not independently validate v2. V2 was designed after observing the Phase B counterexample, so this stage measures whether the identified weakness was repaired without breaking prior invariants.
+```text
+(app, region, cluster, gateway, path)
+```
+
+Repeated failure events can increase observation strength only until the existing v2 saturation behavior takes effect. The latest failure time for each active evidence unit determines its freshness.
+
+### Decay
+
+The Phase C experimental half-life is 30 minutes.
+
+For evidence age `t`:
+
+```text
+freshness_weight = 0.5 ** (t / 30)
+```
+
+The half-life is a lab parameter selected to make temporal behavior observable in a compact deterministic experiment. It is not a production recommendation.
+
+Weighted inverse-Simpson effective counts are calculated across active evidence units so newer topology evidence has more influence than stale topology evidence.
+
+### Recovery semantics
+
+A recovery signal for an evidence unit supersedes failure events for that same unit at or before the recovery time.
+
+A failure arriving after recovery is treated as recurrence.
+
+Recovery wins a timestamp tie because an active failure must be strictly newer than the latest recovery for the same evidence unit.
+
+### Freshness after saturation
+
+Phase C deliberately applies temporal freshness after volume saturation:
+
+```text
+effective_evidence =
+    source_support
+    × independence_factor
+    × saturated_observation_strength
+    × freshness_factor
+```
+
+This prevents historical event volume from defeating decay. A 5,000-event old incident should not remain high-confidence simply because it began with more observations than a smaller incident.
+
+### Frozen Phase C scenarios
+
+The Phase C scenario specification is committed and covered by a digest before result publication.
+
+#### 1. Fresh independent accumulation
+
+Twelve balanced evidence units are introduced in four batches at minutes:
+
+```text
+0, 5, 10, 15
+```
+
+Each batch introduces three new evidence units, each with five failure events.
+
+Required behavior:
+
+- confidence strictly increases at every step;
+- the final state reaches the high tier.
+
+#### 2. Passive decay
+
+Sixty balanced failure events are observed at minute 0 and then no new evidence arrives.
+
+Confidence is evaluated at:
+
+```text
+0, 30, 60, 90, 120 minutes
+```
+
+Required behavior:
+
+- confidence strictly decreases at every evaluation;
+- confidence is below high by minute 60;
+- confidence is low by minute 120.
+
+#### 3. Partial recovery
+
+Six of the twelve balanced evidence units recover at minute 30.
+
+Required behavior:
+
+- confidence with recovery is at least `0.20` lower than the same timeline without recovery.
+
+The `0.20` value is a Phase C stress criterion, not a universal SHIELD threshold.
+
+#### 4. Full recovery and recurrence
+
+All twelve evidence units recover at minute 45. Fresh balanced failures recur at minute 90.
+
+Required behavior:
+
+- after recovery, confidence is low;
+- at minute 89, future recurrence evidence has no effect;
+- at minute 90, fresh recurrence rebuilds confidence to high.
+
+#### 5. Stale-volume guard
+
+A balanced 5,000-event incident occurs at minute 0 and receives no fresh evidence.
+
+At minute 120, four half-lives later, the result must be low-confidence.
+
+This check specifically guards against event volume overpowering temporal decay.
+
+#### 6. Input-order invariance
+
+The same failure/recovery event set is evaluated in forward and reversed input order.
+
+Required behavior:
+
+- the complete temporal detector output is identical.
+
+### Phase C claim checks
+
+The runner reports seven explicit checks:
+
+1. `freshIndependentEvidenceAccumulates`
+2. `passiveDecayReducesConfidence`
+3. `recoverySuppressesPriorFailures`
+4. `recurrenceRebuildsConfidence`
+5. `futureEvidenceDoesNotLeakBackward`
+6. `staleVolumeCannotOverrideDecay`
+7. `inputOrderInvariant`
+
+A failing check is a valid experimental result. The runner exits nonzero rather than silently retuning Phase C after observing a failure.
 
 ## Reproducibility
 
-All current runners use Python 3.11+ standard library only and no randomness. Results record the Git commit, dirty state, runner/sweep/scoring versions, configuration digests, Python version, platform, complete measurements, and limitations.
+All current runners use Python 3.11+ standard library only and no randomness. Results record the Git commit, dirty state, runner/scenario/scoring or temporal versions, configuration digests, Python version, platform, complete measurements, and limitations.
 
 Generated JSON and Markdown summaries remain ignored until review. Formal publication requires a clean repository run or explicit classification of why provenance is unavailable.
 
 ## Threats to validity
 
 - Synthetic topology is a proxy for real causal structure.
-- Effective source counts measure distribution concentration, not causal independence.
-- Traffic concentration is evidence of possible correlation, not proof that observations share a root cause.
-- The Phase B material-drop threshold is an experimental stress criterion and requires future calibration.
-- V2 was developed in response to the Phase B failure, so passing Phase B is not an independent holdout test.
-- Incident/non-incident ground truth is still absent, so precision, recall, false-positive rate, and false-negative rate are not yet measurable.
-- Temporal ordering, evidence decay, contradictory evidence, source reliability, and adversarial telemetry are not modeled yet.
+- Effective source counts and traffic distribution do not prove causal independence.
+- The 30-minute half-life is arbitrary experimental calibration.
+- Recovery is represented as a discrete source/topology state transition; real systems can recover partially or ambiguously.
+- Clock skew, delayed telemetry, out-of-order timestamps, contradictory recovery/failure signals, source reliability, and adversarial timestamp manipulation are not modeled.
+- Phase C reuses v2 topology assumptions rather than validating them against real dependency graphs.
+- Incident/non-incident ground truth is still absent, so precision, recall, false-positive rate, and false-negative rate are not measurable.
+- No remediation authority or action safety is evaluated.
 
 ## Next phases
 
-If v2 survives independent reproduction, the next tests should add evidence that was not used to design v2:
+After Phase C, the strongest next research steps are:
 
-- **holdout topology tests** — new distributions and dependency structures not represented in Phase B;
-- **temporal evidence** — arrival order, decay, recovery, and recurrence;
-- **noisy ground truth** — incident and non-incident cases to measure calibration, precision, recall, and time-to-confidence;
-- **trace replay** — openly available or consented operational traces with topology metadata.
+- **temporal adversarial tests** — clock skew, delayed signals, contradictory recovery, bursty recurrence, and stale-source poisoning;
+- **holdout topology tests** — dependency structures not represented in the v2 design set;
+- **noisy ground truth** — inject incident and non-incident cases to measure calibration, precision, recall, and time-to-confidence;
+- **remediation authority** — map confidence to reversible, blast-radius-aware action levels;
+- **trace replay** — openly available or consented operational traces with topology and timing metadata.

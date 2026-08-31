@@ -23,7 +23,7 @@ A passing experiment is evidence only for the tested implementation, corpus, con
 | Lab | Question | Status |
 |---|---|---|
 | [AEG Lab #001: Governing Agent Tool Execution](labs/aeg_001/) | Can an independent governance boundary prevent unsafe or over-broad execution while preserving legitimate tool use? | Phase A and Phase B v2 measured |
-| [SHIELD Lab #001: Independent Evidence Reinforcement](labs/shield_001/) | Can correlation-aware evidence weighting distinguish repeated observations from genuinely independent corroboration? | Phase A measured; Phase B exposed v1 concentration blindness; clean v2 regression validation published |
+| [SHIELD Lab #001: Independent Evidence Reinforcement](labs/shield_001/) | Can correlation-aware evidence weighting distinguish repeated observations from genuinely independent corroboration? | Phase A measured; Phase B exposed v1 concentration blindness; clean v2 regression validation published; Phase C temporal harness implemented |
 
 ## Related public work
 
@@ -45,6 +45,7 @@ python -m labs.aeg_001.phase_a
 python -m labs.shield_001.phase_a
 python -m labs.shield_001.phase_b
 python -m labs.shield_001.v2_validation
+python -m labs.shield_001.phase_c
 ```
 
 A lab command may intentionally exit nonzero when a predeclared architectural check fails. Read the generated summary before treating a nonzero exit as a harness error.
