@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from concurrent.futures import ThreadPoolExecutor
 
+from labs.adp_001.b2_baseline import TinyApi
 from labs.adp_001.b2_candidate_loader import cached_api_type
 
 
@@ -46,16 +47,25 @@ def test_cached_response_cannot_be_mutated_by_caller() -> None:
     assert fresh.body["value"] == "1"
 
 
-def test_cache_capacity_is_bounded() -> None:
+def test_cache_capacity_is_bounded_and_evicts_lru(monkeypatch) -> None:
+    calls: list[tuple[str, str]] = []
+    original = TinyApi.get_item
+
+    def tracked_get(self, client_id: str, key: str):
+        calls.append((client_id, key))
+        return original(self, client_id, key)
+
+    monkeypatch.setattr(TinyApi, "get_item", tracked_get)
     clock = Clock()
     api = _api(clock, max_entries=4)
-    for index in range(8):
+    for index in range(5):
         key = f"k{index}"
         api.put_item("client-a", key, str(index))
         assert api.get_item("client-a", key).status == 200
-    cache = getattr(api, "_cache", None)
-    assert cache is not None, "candidate must expose internal _cache for bounded-capacity verification"
-    assert len(cache) <= 4
+
+    calls.clear()
+    assert api.get_item("client-a", "k0").status == 200
+    assert calls == [("client-a", "k0")], "least recently used entry should have been evicted"
 
 
 def test_concurrent_reads_are_safe() -> None:
@@ -68,11 +78,20 @@ def test_concurrent_reads_are_safe() -> None:
     assert all(response.body == {"key": "x", "value": "1"} for response in responses)
 
 
-def test_exact_ttl_boundary_is_expired() -> None:
+def test_exact_ttl_boundary_is_expired(monkeypatch) -> None:
+    calls: list[tuple[str, str]] = []
+    original = TinyApi.get_item
+
+    def tracked_get(self, client_id: str, key: str):
+        calls.append((client_id, key))
+        return original(self, client_id, key)
+
+    monkeypatch.setattr(TinyApi, "get_item", tracked_get)
     clock = Clock()
     api = _api(clock, ttl_seconds=30)
     api.put_item("client-a", "x", "1")
     assert api.get_item("client-a", "x").status == 200
+    calls.clear()
     clock.value = 30.0
-    api.put_item("client-a", "x", "2")
-    assert api.get_item("client-a", "x").body["value"] == "2"
+    assert api.get_item("client-a", "x").status == 200
+    assert calls == [("client-a", "x")], "entry must be expired at the exact TTL boundary"
