@@ -13,9 +13,7 @@ from typing import Any
 
 from .b4_evaluator import evaluate
 from .phase_b5 import (
-    DEFAULT_BUDGETS,
     DEFAULT_MODEL,
-    _call_model,
     _digest,
     _generate_frozen_start,
     _parse_budgets,
@@ -85,7 +83,6 @@ def main() -> int:
         run_root = root / "results" / "b5-replication" / f"start-{start_index:02d}"
         run_root.mkdir(parents=True, exist_ok=True)
 
-        # Generate one frozen candidate, then copy it into a start-specific location.
         frozen_file, frozen_call, frozen_parsed = _generate_frozen_start(root, api_key, model)
         frozen_source = frozen_file.read_text(encoding="utf-8")
         start_frozen = run_root / "frozen-start.py"
@@ -95,14 +92,13 @@ def main() -> int:
 
         branch_records: list[dict[str, Any]] = []
         for budget in budgets:
-            # _run_budget_branch writes under b5-runs, so temporarily use a copied frozen file,
-            # then retain the full returned metadata in the replication result.
             record = _run_budget_branch(
                 root=root,
                 budget=budget,
                 frozen_file=start_frozen,
                 api_key=api_key,
                 model=model,
+                branch_root=run_root,
             )
             branch_records.append(record)
             e = record["evaluation"]
