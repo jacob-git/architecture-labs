@@ -4,7 +4,7 @@ from collections import defaultdict
 from threading import Lock
 from typing import Callable
 
-from .baseline import Response, TinyApi
+from labs.adp_001.baseline import Response, TinyApi
 
 
 class RateLimitedApi:
