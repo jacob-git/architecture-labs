@@ -1,39 +1,29 @@
 from __future__ import annotations
 
 import json
-import subprocess
-import sys
 from pathlib import Path
 
-
-def _pytest(path: Path) -> dict[str, object]:
-    proc = subprocess.run(
-        [sys.executable, "-m", "pytest", "-q", str(path)],
-        capture_output=True,
-        text=True,
-        check=False,
-    )
-    return {
-        "path": path.name,
-        "passed": proc.returncode == 0,
-        "output": (proc.stdout + proc.stderr).strip(),
-    }
+from labs.adp_001.evaluator import evaluate
 
 
 def main() -> None:
     root = Path(__file__).resolve().parent
-    visible = _pytest(root / "tests_visible.py")
-    hidden = _pytest(root / "tests_hidden.py")
+    reference = evaluate(root / "reference_solution.py", mode="reference")
+    baseline = evaluate(root / "baseline.py", mode="unmodified-baseline")
+
+    reference_passes = reference.passed == reference.total
+    baseline_is_rejected = baseline.passed < baseline.total
 
     result = {
         "lab": "ADP-001",
         "phase": "A — deterministic harness validation",
         "feature": "per-client fixed-window API rate limiting",
         "model_calls": 0,
-        "visible_suite": visible,
-        "hidden_suite": hidden,
-        "reference_solution_passes": bool(visible["passed"] and hidden["passed"]),
-        "pass": bool(visible["passed"] and hidden["passed"]),
+        "reference": reference.to_dict(),
+        "baseline": baseline.to_dict(),
+        "reference_solution_passes": reference_passes,
+        "unmodified_baseline_is_rejected": baseline_is_rejected,
+        "pass": reference_passes and baseline_is_rejected,
     }
 
     results_dir = root / "results"
