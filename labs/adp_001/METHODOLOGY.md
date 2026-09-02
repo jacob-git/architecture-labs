@@ -19,9 +19,11 @@ The phase establishes:
 - five development-mode prompt treatments,
 - a result schema suitable for later model runs.
 
+Phase A uses a positive control and a negative control. The reference implementation must pass the evaluator, and the unmodified baseline must be rejected because it does not implement the feature.
+
 ## Independent variable
 
-Development mode is the independent variable. Later phases will keep the model, baseline repository, feature, and evaluator fixed while changing only the information and autonomy treatment.
+Development mode is the independent variable. Phase B keeps the model, baseline repository, feature, candidate interface, and evaluator fixed while changing the information and autonomy treatment.
 
 Treatments:
 
@@ -48,27 +50,59 @@ Hidden properties test aspects that should follow from a robust implementation b
 - concurrent accounting,
 - dependency policy.
 
-Experiment agents must not inspect hidden tests.
+Experiment agents must not inspect hidden tests. Hidden test output is used only by the evaluator and is never supplied as repair feedback.
 
-## Primary metrics for Phase B
+## Phase B protocol
 
+Phase B uses one model alias for every treatment in a run. The default is `gpt-5.6-luna`, and `ADP_LAB_MODEL` may override it. A study intended for publication should record the actual resolved model returned by the API and the repository commit used for the run.
+
+All treatments receive the same baseline source and the same candidate-module interface required by the evaluator. This common harness contract is not considered treatment information.
+
+Information exposure differs by treatment:
+
+- **Vibe:** short natural-language feature request plus baseline.
+- **Intent:** outcome and explicit constraints plus baseline.
+- **Spec:** detailed functional, engineering, and acceptance requirements plus baseline.
+- **Context:** intent plus durable architecture, engineering, and agent guidance plus baseline.
+- **Agentic:** specification plus durable repository guidance plus baseline, with permission to autonomously iterate on visible validation feedback.
+
+Vibe, intent, spec, and context receive one model implementation call per trial. Agentic may receive up to three repair calls after its first implementation when visible tests or dependency-policy checks fail.
+
+The agentic repair loop receives only:
+
+- the original allowed treatment material,
+- its current implementation,
+- visible test output,
+- dependency-policy output.
+
+It never receives hidden test output.
+
+## Primary metrics
+
+- full evaluator pass rate,
+- evaluator score,
 - visible test pass rate,
 - hidden test pass rate,
-- constraint compliance,
-- human interventions,
-- corrective prompts,
+- dependency-policy compliance,
 - model interactions,
 - autonomous repair attempts,
-- unnecessary files changed,
-- final completeness.
+- generated test artifact size,
+- token usage when reported by the provider,
+- model latency as descriptive metadata.
 
-Elapsed wall-clock time will be recorded when useful but will not be a primary quality measure because infrastructure latency can dominate it.
+Elapsed wall-clock time is not a primary quality measure because infrastructure latency can dominate it.
 
 ## Fairness controls
 
-Phase B should use the same model and model configuration for every treatment. Each run must start from the same baseline commit. The evaluator and hidden tests must remain unchanged across treatments.
+Each trial must start from the same baseline source. The evaluator and hidden tests must remain unchanged across treatments. The same model alias and API protocol must be used within a comparison batch.
 
-Each treatment should be replicated before drawing conclusions. Ten independent runs per treatment is the initial target.
+The runner records cryptographic digests of the baseline, hidden evaluator, and treatment prompt material so later results can be tied to the exact experiment definition.
+
+## Replication
+
+A single run per treatment is exploratory and must not be presented as a stable ranking. Ten independent runs per treatment is the initial target before drawing comparative conclusions.
+
+After the treatment protocol is stable, a later phase may repeat the experiment across multiple models to test whether treatment effects generalize.
 
 ## Hypothesis
 
@@ -78,4 +112,4 @@ This is a falsifiable hypothesis, not an assumed conclusion. Simpler treatments 
 
 ## Versioning
 
-ADP-001 is permanent. Material changes to the task, evaluator, model protocol, or hidden properties must create a new phase or explicit methodology version rather than silently replacing prior results.
+ADP-001 is permanent. Material changes to the task, evaluator, model protocol, candidate contract, hidden properties, or autonomy rules must create a new phase or explicit methodology version rather than silently replacing prior results.
