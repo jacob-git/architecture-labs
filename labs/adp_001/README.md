@@ -74,15 +74,13 @@ python -m labs.adp_001.analyze_b4
 
 ## Phase B5 — repair budget from a fixed starting candidate
 
-B5 removes the initial generation difference from repair-budget comparisons.
+B5 removes the initial generation difference from repair budget comparisons.
 
-One initial `PublishingApi` candidate is generated exactly once and frozen. Every repair-budget branch starts from that exact same candidate and receives the same visible runtime feedback rules. The default budgets are 0, 1, 3, 5, and 8 repairs.
+One initial `PublishingApi` candidate is generated exactly once and frozen. Every repair budget branch starts from that exact same candidate and receives the same visible runtime feedback rules. The default budgets are 0, 1, 3, 5, and 8 repairs.
 
-This isolates the question:
+The first fixed start run produced full recovery at budgets 5 and 8, while budgets 0, 1, and 3 did not fully recover. Because repair generation is still stochastic, a replicated study is needed before estimating a repair budget curve.
 
-> When the starting implementation is held constant, how much value comes from allowing additional autonomous repair opportunities?
-
-Run:
+Run one fixed start:
 
 ```bash
 python -m labs.adp_001.phase_b5
@@ -94,21 +92,45 @@ Override the budgets if needed:
 ADP_B5_REPAIR_BUDGETS=0,1,3,5,8 python -m labs.adp_001.phase_b5
 ```
 
-The runner records the frozen candidate digest and confirms that every branch shares the same start. Results are written to:
+## Phase B5 replication — repair budget curve
 
-```text
-labs/adp_001/results/phase-b5-latest.json
+The replication runner generates multiple independent frozen starts. Within each start, every budget branch begins from exactly the same frozen candidate. Across starts, independently generated starting candidates allow recovery probability and repair cost to be estimated.
+
+The default study uses 10 starts and budgets 0, 1, 3, 5, and 8:
+
+```bash
+python -m labs.adp_001.phase_b5_replication
 ```
 
-Generated branch candidates are stored under:
+For a smaller exploratory replication:
+
+```bash
+ADP_B5_STARTS=3 python -m labs.adp_001.phase_b5_replication
+```
+
+The summary reports, per budget:
+
+- full recovery count and rate
+- mean final evaluator score
+- mean repairs actually used
+- mean repair token usage
+- mean repair tokens among successful recoveries
+
+Artifacts for every start and every repair branch are retained under:
 
 ```text
-labs/adp_001/results/b5-runs/
+labs/adp_001/results/b5-replication/
+```
+
+The aggregate result is written to:
+
+```text
+labs/adp_001/results/phase-b5-replication-latest.json
 ```
 
 ## Treatment fairness
 
-Within each comparison, the model, initial prompt material, candidate contract, evaluator, and hidden tests remain fixed. Treatment differences are explicitly recorded rather than silently changing the task.
+Within each comparison, the model, initial prompt material, candidate contract, evaluator, and hidden tests remain fixed. Within every B5 replication start, all budget branches use the same frozen candidate. Treatment differences are explicitly recorded rather than silently changing the task.
 
 ## Interpretation discipline
 
