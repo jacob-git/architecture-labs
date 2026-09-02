@@ -21,9 +21,9 @@ from .b4_evaluator import EvaluationResult, evaluate
 API_URL = "https://api.openai.com/v1/responses"
 DEFAULT_MODEL = "gpt-5.6-luna"
 DEFAULT_OUTPUT = Path("labs/adp_001/results/phase-b4-latest.json")
-RUNNER_VERSION = "adp-phase-b4-runner-v1"
+RUNNER_VERSION = "adp-phase-b4-runner-v2"
 TREATMENTS = ("one_shot", "runtime_feedback_loop")
-MAX_REPAIRS = 3
+DEFAULT_MAX_REPAIRS = 3
 
 SYSTEM = """You are participating in a controlled software engineering experiment.
 Return JSON only with exactly these keys: implementation, tests, summary.
@@ -95,14 +95,14 @@ def _visible_feedback(evaluation: EvaluationResult) -> str:
     return f"Visible integration tests: {'PASS' if visible.passed else 'FAIL'}\n{visible.detail}\n\nDependency policy: {'PASS' if dependency.passed else 'FAIL'}\n{dependency.detail}"
 
 
-def _run_one(root: Path, treatment: str, trial: int, api_key: str, model: str) -> dict[str, Any]:
+def _run_one(root: Path, treatment: str, trial: int, api_key: str, model: str, max_repairs: int) -> dict[str, Any]:
     run_dir = root / "results" / "b4-runs" / f"{treatment}-{trial:02d}"
     run_dir.mkdir(parents=True, exist_ok=True)
     base_prompt = _shared_prompt(root)
     prompt = base_prompt
     calls: list[dict[str, Any]] = []
     repairs = 0
-    max_attempts = 1 if treatment == "one_shot" else 1 + MAX_REPAIRS
+    max_attempts = 1 if treatment == "one_shot" else 1 + max_repairs
     evaluation = None
     parsed = None
     candidate = None
@@ -121,7 +121,7 @@ def _run_one(root: Path, treatment: str, trial: int, api_key: str, model: str) -
             repairs += 1
             prompt = "\n\n".join([base_prompt, "# Current implementation", parsed["implementation"], "# Runtime validation feedback", _visible_feedback(evaluation), "Repair the integration using only this visible runtime feedback. Return the complete corrected implementation in the same JSON structure."])
     assert evaluation is not None and parsed is not None and candidate is not None
-    return {"treatment": treatment, "trial": trial, "modelInteractions": len(calls), "repairAttempts": repairs, "calls": calls, "evaluation": evaluation.to_dict(), "finalCandidate": str(candidate.relative_to(root)), "summary": parsed["summary"]}
+    return {"treatment": treatment, "trial": trial, "maxRepairBudget": max_repairs if treatment == "runtime_feedback_loop" else 0, "modelInteractions": len(calls), "repairAttempts": repairs, "calls": calls, "evaluation": evaluation.to_dict(), "finalCandidate": str(candidate.relative_to(root)), "summary": parsed["summary"]}
 
 
 def main() -> int:
@@ -130,17 +130,24 @@ def main() -> int:
         print("OPENAI_API_KEY is required for ADP-001 Phase B4.", file=sys.stderr); return 2
     root = Path(__file__).resolve().parent
     model = os.environ.get("ADP_LAB_MODEL", DEFAULT_MODEL)
-    repeats = int(os.environ.get("ADP_LAB_REPEATS", "1"))
+    try:
+        repeats = int(os.environ.get("ADP_LAB_REPEATS", "1"))
+        max_repairs = int(os.environ.get("ADP_B4_MAX_REPAIRS", str(DEFAULT_MAX_REPAIRS)))
+        if repeats < 1 or max_repairs < 0:
+            raise ValueError
+    except ValueError:
+        print("ADP_LAB_REPEATS must be >= 1 and ADP_B4_MAX_REPAIRS must be >= 0", file=sys.stderr)
+        return 2
     records: list[dict[str, Any]] = []
     total = repeats * len(TREATMENTS)
-    print(f"ADP-001 Phase B4: 2 treatments x {repeats} repeat(s) = {total} trial(s) using {model}")
+    print(f"ADP-001 Phase B4: 2 treatments x {repeats} repeat(s) = {total} trial(s) using {model}; repair budget={max_repairs}")
     position = 0
     for trial in range(1, repeats + 1):
         for treatment in TREATMENTS:
             position += 1
             print(f"[{position}/{total}] {treatment} trial {trial}")
             try:
-                record = _run_one(root, treatment, trial, api_key, model)
+                record = _run_one(root, treatment, trial, api_key, model, max_repairs)
                 records.append(record)
                 e = record["evaluation"]
                 print(f"  score={e['score']:.4f} interactions={record['modelInteractions']} repairs={record['repairAttempts']}")
@@ -158,7 +165,7 @@ def main() -> int:
         by_treatment[treatment] = {"completed": len(rows), "fullPasses": sum(r["evaluation"]["passed"] == r["evaluation"]["total"] for r in rows), "meanScore": round(sum(r["evaluation"]["score"] for r in rows)/len(rows), 4) if rows else None, "meanModelInteractions": round(sum(r["modelInteractions"] for r in rows)/len(rows), 2) if rows else None, "meanRepairAttempts": round(sum(r["repairAttempts"] for r in rows)/len(rows), 2) if rows else None}
     repo = _repo_state()
     shared = _shared_prompt(root)
-    summary = {"lab": "ADP-001", "phase": "B4 — runtime feedback value", "runnerVersion": RUNNER_VERSION, "repositoryCommit": repo["commit"], "repositoryDirty": repo["dirty"], "modelAlias": model, "treatments": list(TREATMENTS), "repeats": repeats, "trialsStarted": len(records), "completed": sum("error" not in r for r in records), "errors": sum("error" in r for r in records), "initialPromptDigest": _digest(shared), "sameInitialPromptForBothTreatments": True, "hiddenTestsDigest": _digest(_read(root / "b4_tests_hidden.py")), "byTreatment": by_treatment, "usage": dict(usage), "generatedAt": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")}
+    summary = {"lab": "ADP-001", "phase": "B4 — runtime feedback value", "runnerVersion": RUNNER_VERSION, "repositoryCommit": repo["commit"], "repositoryDirty": repo["dirty"], "modelAlias": model, "treatments": list(TREATMENTS), "repeats": repeats, "maxRepairBudget": max_repairs, "trialsStarted": len(records), "completed": sum("error" not in r for r in records), "errors": sum("error" in r for r in records), "initialPromptDigest": _digest(shared), "sameInitialPromptForBothTreatments": True, "hiddenTestsDigest": _digest(_read(root / "b4_tests_hidden.py")), "byTreatment": by_treatment, "usage": dict(usage), "generatedAt": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")}
     output = Path(os.environ.get("ADP_LAB_OUTPUT", DEFAULT_OUTPUT))
     output.parent.mkdir(parents=True, exist_ok=True)
     output.write_text(json.dumps({"summary": summary, "records": records}, indent=2)+"\n", encoding="utf-8")
