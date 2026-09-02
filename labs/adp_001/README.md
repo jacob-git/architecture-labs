@@ -64,21 +64,40 @@ B4 moves from static information quality to integration feedback. Both treatment
 - `runtime_feedback_loop` receives the identical initial prompt and may use visible integration test failures for up to three repairs.
 - Hidden evaluator output is never exposed.
 
-The research question is whether visible runtime feedback improves reliability when static specification quality is held constant but a concrete integration contract must be discovered through execution.
+The exploratory run produced:
 
-Validate the deterministic harness first:
+| Treatment | Score | Interactions | Repairs |
+|---|---:|---:|---:|
+| One shot | 0.3333 | 1 | 0 |
+| Runtime feedback loop | 0.6667 | 4 | 3 |
+
+Runtime feedback improved the measured outcome but did not produce a full pass. This makes the repair path itself an important object of study rather than treating the final aggregate score as the whole result.
+
+Replay every saved B4 attempt at individual property granularity with no model calls:
+
+```bash
+python -m labs.adp_001.analyze_b4
+```
+
+The trajectory analyzer reports which properties were fixed, which remained broken, and whether any repair introduced regressions. It writes:
+
+```text
+labs/adp_001/results/phase-b4-repair-trajectory.json
+```
+
+Validate the deterministic harness with:
 
 ```bash
 python -m labs.adp_001.phase_b4_validation
 ```
 
-Then run one exploratory pair:
+Run the experiment with:
 
 ```bash
 python -m labs.adp_001.phase_b4
 ```
 
-B4 writes:
+B4 aggregate results are written to:
 
 ```text
 labs/adp_001/results/phase-b4-latest.json
@@ -89,8 +108,6 @@ Generated candidates are stored under:
 ```text
 labs/adp_001/results/b4-runs/
 ```
-
-Do not replicate B4 until the exploratory pair confirms the task actually activates the runtime feedback loop.
 
 ## Treatment fairness
 
