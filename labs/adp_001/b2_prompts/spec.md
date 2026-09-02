@@ -18,7 +18,6 @@ Implement a per-client bounded TTL response cache around the existing API.
 - Methods: `put_item(client_id, key, value)` and `get_item(client_id, key)`.
 - Python standard library only.
 - Use the injected clock for TTL behavior.
-- Expose cache state as `_cache` so bounded-capacity behavior can be independently evaluated.
 
 ## Acceptance criteria
 - Existing API behavior remains compatible.
