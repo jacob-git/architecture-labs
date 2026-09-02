@@ -1,6 +1,6 @@
 # ADP-001 — Comparing AI Development Modes
 
-ADP-001 is the first lab in the AI Development Patterns series. It compares how different AI-assisted development modes perform on the same bounded software change.
+ADP-001 is the first lab in the AI Development Patterns series. It compares how different AI assisted development modes perform on the same bounded software change.
 
 ## Research claim
 
@@ -16,74 +16,70 @@ Better AI development outcomes may depend not only on model capability, but also
 
 ## Phase A
 
-Phase A is deterministic and model independent. It establishes the baseline application, feature contract, visible and hidden tests, a reference solution, prompt treatments, repository guidance, and evaluator structure.
-
-Run:
+Phase A is deterministic and model independent. It validates the experiment harness for the initial rate limiting task.
 
 ```bash
 python -m labs.adp_001.phase_a
 ```
 
-A valid Phase A run requires both controls to behave correctly:
+A valid run requires the known good reference to pass and the unmodified baseline to be rejected.
 
-- the known-good reference passes all checks,
-- the unmodified baseline is rejected.
+## Phase B1 — simple task
 
-## Phase B
-
-Phase B uses one fixed real model across the five treatments. Every treatment starts from the same baseline and is scored by the same visible tests, hidden tests, and dependency policy.
-
-The vibe, intent, spec, and context treatments receive one implementation attempt. The agentic treatment may receive visible test and dependency-policy feedback and autonomously repair its implementation up to three times. Hidden evaluator results are never exposed to the model.
-
-Required environment variable:
-
-```bash
-export OPENAI_API_KEY="..."
-```
-
-Run one trial per treatment:
+Phase B1 runs one fixed real model across the five treatments on the rate limiting task.
 
 ```bash
 python -m labs.adp_001.phase_b
 ```
 
+The first measured run produced a ceiling effect: all five treatments passed with one model interaction and zero repairs. That result is retained rather than hidden because it is evidence that a small, bounded task may not require extensive structure for a capable model.
+
+## Phase B2 — constraint dense task
+
+Phase B2 keeps the same treatment protocol but moves to a harder bounded TTL cache task. The evaluator checks client isolation, write invalidation, TTL expiry, bounded LRU capacity, mutation safety, concurrent reads, legacy response compatibility, and dependency discipline.
+
+Validate the deterministic B2 harness first:
+
+```bash
+python -m labs.adp_001.phase_b2_validation
+```
+
+Then run one model trial per treatment:
+
+```bash
+python -m labs.adp_001.phase_b2
+```
+
 Useful controls:
 
 ```bash
-ADP_LAB_MODEL=gpt-5.6-luna python -m labs.adp_001.phase_b
-ADP_LAB_REPEATS=10 python -m labs.adp_001.phase_b
-ADP_LAB_TREATMENTS=vibe,spec,agentic python -m labs.adp_001.phase_b
+ADP_LAB_MODEL=gpt-5.6-luna python -m labs.adp_001.phase_b2
+ADP_LAB_REPEATS=10 python -m labs.adp_001.phase_b2
+ADP_LAB_TREATMENTS=vibe,spec,agentic python -m labs.adp_001.phase_b2
 ```
 
-The latest aggregate result is written to:
+Phase B2 writes its aggregate result to:
 
 ```text
-labs/adp_001/results/phase-b-latest.json
+labs/adp_001/results/phase-b2-latest.json
 ```
 
-Individual generated candidates and model summaries are kept under `results/runs/`.
+Generated candidates are kept under `results/b2-runs/`.
 
-## Feature under test
+## Treatment fairness
 
-The shared task is to add per-client fixed-window API rate limiting while preserving existing API behavior and using only the Python standard library.
+The model, baseline, output contract, and evaluator remain fixed across treatments. Vibe, intent, spec, and context receive one implementation attempt. Agentic development may receive visible test and dependency feedback and repair up to three times. Hidden evaluator tests are never exposed to any treatment.
 
-## Why one feature across all modes?
+## Repository layout
 
-The experiment is intended to isolate development method rather than feature difficulty. Model runs start from the same baseline and use the same evaluator.
-
-## Files
-
-- `baseline.py` — unchanged starting application
-- `spec.py` — frozen feature contract and evaluator properties
-- `reference_solution.py` — known-good implementation used to validate Phase A
-- `tests_visible.py` — acceptance feedback that may be exposed only according to the treatment protocol
-- `tests_hidden.py` — independent evaluator checks; experiment agents must not inspect these
-- `prompts/` — treatment prompts for each development mode
-- `context/` — durable repository knowledge used by context and agentic treatments
-- `evaluator.py` — common result and policy evaluator
-- `phase_b.py` — real-model treatment runner
+- `baseline.py`, `reference_solution.py`, `tests_visible.py`, `tests_hidden.py` — Phase A and B1 rate limiting task
+- `prompts/`, `context/`, `phase_b.py` — B1 treatments and runner
+- `b2_baseline.py`, `b2_reference_solution.py` — harder cache task
+- `b2_prompts/`, `b2_context/` — B2 treatments and durable repository context
+- `b2_tests_visible.py`, `b2_tests_hidden.py` — B2 acceptance and independent evaluation
+- `b2_evaluator.py`, `phase_b2.py`, `phase_b2_validation.py` — B2 evaluator, model runner, and deterministic validation
 - `METHODOLOGY.md` — experiment design and fairness controls
 
 ## Replication
 
-A single Phase B run is exploratory. The initial replication target is 10 independent runs per treatment before drawing conclusions about relative reliability or intervention cost.
+Do not treat a single run as evidence of superiority. Replication begins only after a task demonstrates enough discrimination to avoid a ceiling effect.
