@@ -2,6 +2,10 @@
 
 ADP-001 is the first lab in the AI Development Patterns series. It compares how different AI assisted development modes perform on the same bounded software change.
 
+## Research report
+
+The consolidated research report, including measured results, interpretation, threats to validity, and reproduction guidance, is available in [REPORT.md](REPORT.md).
+
 ## Research claim
 
 Better AI development outcomes may depend not only on model capability, but also on how clearly humans encode intent, specifications, repository context, verification, and runtime feedback.
@@ -78,25 +82,27 @@ B5 removes the initial generation difference from repair budget comparisons.
 
 One initial `PublishingApi` candidate is generated exactly once and frozen. Every repair budget branch starts from that exact same candidate and receives the same visible runtime feedback rules. The default budgets are 0, 1, 3, 5, and 8 repairs.
 
-The first fixed start run produced full recovery at budgets 5 and 8, while budgets 0, 1, and 3 did not fully recover. Because repair generation is still stochastic, a replicated study is needed before estimating a repair budget curve.
-
 Run one fixed start:
 
 ```bash
 python -m labs.adp_001.phase_b5
 ```
 
-Override the budgets if needed:
-
-```bash
-ADP_B5_REPAIR_BUDGETS=0,1,3,5,8 python -m labs.adp_001.phase_b5
-```
-
 ## Phase B5 replication — repair budget curve
 
-The replication runner generates multiple independent frozen starts. Within each start, every budget branch begins from exactly the same frozen candidate. Across starts, independently generated starting candidates allow recovery probability and repair cost to be estimated.
+The replicated study used 10 independently generated frozen starts. Within each start, every budget branch began from exactly the same frozen candidate.
 
-The default study uses 10 starts and budgets 0, 1, 3, 5, and 8:
+| Repair budget | Full passes | Recovery rate | Mean final score | Mean repairs used | Mean repair tokens |
+|---|---:|---:|---:|---:|---:|
+| 0 | 0/10 | 0% | 0.3333 | 0.0 | 0 |
+| 1 | 0/10 | 0% | 0.3666 | 1.0 | 1,733 |
+| 3 | 3/10 | 30% | 0.6000 | 2.9 | 4,851 |
+| 5 | 6/10 | 60% | 0.7333 | 4.2 | 6,969 |
+| 8 | 6/10 | 60% | 0.8000 | 5.8 | 9,764.4 |
+
+The measured full recovery rate flattened between budgets 5 and 8 while mean repair token use continued to rise. This is evidence of diminishing returns for this model and task, not a claim that five repairs is a universal optimum.
+
+Run the replicated study with:
 
 ```bash
 python -m labs.adp_001.phase_b5_replication
@@ -108,15 +114,7 @@ For a smaller exploratory replication:
 ADP_B5_STARTS=3 python -m labs.adp_001.phase_b5_replication
 ```
 
-The summary reports, per budget:
-
-- full recovery count and rate
-- mean final evaluator score
-- mean repairs actually used
-- mean repair token usage
-- mean repair tokens among successful recoveries
-
-Artifacts for every start and every repair branch are retained under:
+Artifacts for every start and repair branch are retained under:
 
 ```text
 labs/adp_001/results/b5-replication/
