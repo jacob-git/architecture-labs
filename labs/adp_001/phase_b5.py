@@ -149,8 +149,9 @@ def _generate_frozen_start(root: Path, api_key: str, model: str) -> tuple[Path, 
     return frozen, result, parsed
 
 
-def _run_budget_branch(*, root: Path, budget: int, frozen_file: Path, api_key: str, model: str) -> dict[str, Any]:
-    branch_dir = root / "results" / "b5-runs" / f"budget-{budget}"
+def _run_budget_branch(*, root: Path, budget: int, frozen_file: Path, api_key: str, model: str, branch_root: Path | None = None) -> dict[str, Any]:
+    branch_base = branch_root if branch_root is not None else root / "results" / "b5-runs"
+    branch_dir = branch_base / f"budget-{budget}"
     branch_dir.mkdir(parents=True, exist_ok=True)
     current_source = frozen_file.read_text(encoding="utf-8")
     current = branch_dir / "candidate-attempt-0.py"
