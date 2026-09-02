@@ -61,17 +61,10 @@ python -m labs.adp_001.phase_b3
 B4 moves from static information quality to integration feedback. Both treatments receive the same feature specification and the same public starting application. The concrete publisher calling convention is a runtime integration detail rather than prompt material.
 
 - `one_shot` gets one implementation attempt.
-- `runtime_feedback_loop` receives the identical initial prompt and may use visible integration test failures for up to three repairs.
+- `runtime_feedback_loop` receives the identical initial prompt and may use visible integration test failures for repair.
 - Hidden evaluator output is never exposed.
 
-The exploratory run produced:
-
-| Treatment | Score | Interactions | Repairs |
-|---|---:|---:|---:|
-| One shot | 0.3333 | 1 | 0 |
-| Runtime feedback loop | 0.6667 | 4 | 3 |
-
-Runtime feedback improved the measured outcome but did not produce a full pass. This makes the repair path itself an important object of study rather than treating the final aggregate score as the whole result.
+The exploratory 3 repair run improved from 0.3333 to 0.6667, while a later 8 repair run remained at 0.3333. The trajectory replay showed that extra retries alone do not guarantee convergence.
 
 Replay every saved B4 attempt at individual property granularity with no model calls:
 
@@ -79,34 +72,38 @@ Replay every saved B4 attempt at individual property granularity with no model c
 python -m labs.adp_001.analyze_b4
 ```
 
-The trajectory analyzer reports which properties were fixed, which remained broken, and whether any repair introduced regressions. It writes:
+## Phase B5 — repair budget from a fixed starting candidate
 
-```text
-labs/adp_001/results/phase-b4-repair-trajectory.json
-```
+B5 removes the initial generation difference from repair-budget comparisons.
 
-Validate the deterministic harness with:
+One initial `PublishingApi` candidate is generated exactly once and frozen. Every repair-budget branch starts from that exact same candidate and receives the same visible runtime feedback rules. The default budgets are 0, 1, 3, 5, and 8 repairs.
 
-```bash
-python -m labs.adp_001.phase_b4_validation
-```
+This isolates the question:
 
-Run the experiment with:
+> When the starting implementation is held constant, how much value comes from allowing additional autonomous repair opportunities?
+
+Run:
 
 ```bash
-python -m labs.adp_001.phase_b4
+python -m labs.adp_001.phase_b5
 ```
 
-B4 aggregate results are written to:
+Override the budgets if needed:
 
-```text
-labs/adp_001/results/phase-b4-latest.json
+```bash
+ADP_B5_REPAIR_BUDGETS=0,1,3,5,8 python -m labs.adp_001.phase_b5
 ```
 
-Generated candidates are stored under:
+The runner records the frozen candidate digest and confirms that every branch shares the same start. Results are written to:
 
 ```text
-labs/adp_001/results/b4-runs/
+labs/adp_001/results/phase-b5-latest.json
+```
+
+Generated branch candidates are stored under:
+
+```text
+labs/adp_001/results/b5-runs/
 ```
 
 ## Treatment fairness
