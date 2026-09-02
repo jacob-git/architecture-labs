@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "architecture-labs"
-version = "0.24.0"
+version = "0.25.0"
 description = "Public, reproducible experiments for testing architecture claims."
 readme = "README.md"
 requires-python = ">=3.11"
@@ -41,8 +41,11 @@ adp-lab-001-phase-b2 = "labs.adp_001.phase_b2:main"
 adp-lab-001-phase-b2-validation = "labs.adp_001.phase_b2_validation:main"
 adp-lab-001-analyze-b2 = "labs.adp_001.analyze_b2:main"
 adp-lab-001-phase-b3 = "labs.adp_001.phase_b3:main"
+adp-lab-001-phase-b4 = "labs.adp_001.phase_b4:main"
+adp-lab-001-phase-b4-validation = "labs.adp_001.phase_b4_validation:main"
 adp-lab-001-evaluate = "labs.adp_001.evaluator:main"
 adp-lab-001-b2-evaluate = "labs.adp_001.b2_evaluator:main"
+adp-lab-001-b4-evaluate = "labs.adp_001.b4_evaluator:main"
 
 [tool.setuptools.packages.find]
 include = ["labs*"]
